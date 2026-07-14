@@ -12,12 +12,12 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 // import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
+// import { gooeyToast } from "@/components/ui/goey-toaster"
 import { Card, CardContent } from "@/components/ui/card";
 import { setOtpData } from "@/store/slices/authSlice";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, LoginFormData } from "@/validations/loginSchema";
 import type { LoginRequest, LoginResponse } from "@/types/auth";
-
 import type { ApiResponse } from "@/types/common";
 
 export default function Login() {
@@ -34,8 +34,6 @@ export default function Login() {
   // UI State
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  // const [successMessage, setSuccessMessage] = useState("");
-  // const [errorMessage, setErrorMessage] = useState("");
   
   // Handle Login
   const handleLogin = async (data: LoginFormData) => {
@@ -43,8 +41,6 @@ export default function Login() {
     if (loading) return;
 
     setLoading(true);
-    // setErrorMessage("");
-    // setSuccessMessage("");
 
     try {
       const payload: LoginRequest = {
@@ -61,7 +57,7 @@ export default function Login() {
       const loginData = response.data.data;
 
       if (loginData.pending) {
-        dispatch(setOtpData(loginData));
+        dispatch(setOtpData({ ...loginData, login: payload.login }));
 
         toast.success(response.data.message);
 
@@ -106,30 +102,8 @@ export default function Login() {
             </div>
             {/* Logo */}
             <div>
-              <form
-                onSubmit={handleSubmit(handleLogin)}
-              >
+              <form onSubmit={handleSubmit(handleLogin)}>
                 <div className="space-y-6">
-                  {/* ALert */}
-                  {/* {successMessage && (
-                    <Alert>
-                      <AlertTitle>Login Success</AlertTitle>
-                      <AlertDescription>
-                        {successMessage}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {errorMessage && (
-                    <Alert variant="destructive">
-                      <AlertTitle>Login Failed</AlertTitle>
-                      <AlertDescription>
-                        {errorMessage}
-                      </AlertDescription>
-                    </Alert>
-                  )} */}
-                  {/* Alert */}
-                  
                   {/* Username/userAD */}
                   <div className="space-y-2">
                     <Label htmlFor="login">

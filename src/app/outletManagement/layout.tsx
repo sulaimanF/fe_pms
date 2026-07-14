@@ -12,19 +12,13 @@ export default function outletManagementLayout({
 
   return (
     <SidebarProvider>
-
-      <AppSidebar />
-
+      <AppSidebar/>
       <SidebarInset>
-
         <AppHeader />
-
         <main className="p-4 md:p-6">
           {children}
         </main>
-
       </SidebarInset>
-
     </SidebarProvider>
   );
 }

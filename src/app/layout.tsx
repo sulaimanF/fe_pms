@@ -3,6 +3,8 @@ import ReduxProvider from "@/store/provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+// import { GooeyToaster } from "@/components/ui/goey-toaster"
+// import { gooeyToast } from "@/components/ui/goey-toaster"
 
 export const metadata: Metadata = {
   title: "PMS - Premises Management System",
@@ -28,9 +30,15 @@ export default function RootLayout({
             {children}
             <Toaster
               position="top-center"
-              richColors
-              closeButton
+              toastOptions={{
+                classNames: {
+                  success: "!text-green-600",
+                  error: "!text-red-600",
+                  warning: "!text-yellow-600",
+                },
+              }}
             />
+            {/* <GooeyToaster position="top-center"/> */}
           </TooltipProvider>
         </ReduxProvider>
       </body>

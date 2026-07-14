@@ -4,140 +4,115 @@ import Image from "next/image";
 import axios from "axios";
 import api from "@/lib/axios";
 import React, { useEffect, useState } from "react";
-import OtpInput from "@/components/ui/inputOtp";
+import { Input } from "@/components/ui/input";
 import { useDispatch, useSelector  } from "react-redux";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { setAuthData, setOtpData } from "@/store/slices/authSlice";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { otpSchema, OtpFormData } from "@/validations/otpSchema";
 import { RootState } from "@/store/store";
+import type { VerifyOtpRequest, AuthResponse, LoginResponse } from "@/types/auth";
+import type { ApiResponse } from "@/types/common";
 
 export default function OtpForm() {
   const router = useRouter();
-  const otpExpiredAt = useSelector(
-    (state: RootState) => state.auth.otpExpiredAt
-  );
-  const [otpTimer, setOtpTimer] = useState(0); // 5 menit 59 detik
-  const [resendTimer, setResendTimer] = useState(27);
   const dispatch = useDispatch();
-  const [otp, setOtp] = useState<string[]>([
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-  ]);
-  const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const user = useSelector(
-    (state: RootState) => state.auth.user
-  );
-  const otpToken = useSelector(
-    (state: RootState) => state.auth.otpToken
-  );
 
-  useEffect(() => {
-    console.log("otpExpiredAt =", otpExpiredAt);
-  }, [otpExpiredAt]);
-
-  useEffect(() => {
-    if (!otpExpiredAt) return;
-
-    const diff = Math.max(
-      0,
-      Math.floor(
-        ((Number(otpExpiredAt) * 1000) - Date.now()) / 1000
-      )
-    );
-    setOtpTimer(diff);
-  }, [otpExpiredAt]);
-
-  useEffect(() => {
-    if (!otpExpiredAt) return;
-
-    const interval = setInterval(() => {
-      const diff = Math.max(
-        0,
-        Math.floor(
-          ((Number(otpExpiredAt) * 1000) - Date.now()) / 1000
-        )
-      );
-      setOtpTimer(diff);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [otpExpiredAt]);
-
-  useEffect(() => {
-    if (resendTimer <= 0) return;
-    const interval = setInterval(() => {
-      setResendTimer((prev) => prev - 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [resendTimer]);
-
-  const minutes = Math.floor(otpTimer / 60);
-  const seconds = otpTimer % 60;
   const {
-    setValue,
-    trigger,
+    login,
+    reference,
+    sent_to,
+    expired_at,
+  } = useSelector((state: RootState) => state.auth);
+
+  const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+  const isExpired = timeLeft === 0;
+
+  // useEffect(() => {
+  //   if (!reference) {
+  //     router.replace("/login");
+  //   }
+  // }, [reference, router]);
+
+  const {
+    control,
+    handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<OtpFormData>({
     resolver: zodResolver(otpSchema),
-    mode: "onSubmit",
+    defaultValues: {
+      otp: "",
+    },
   });
 
-  const handleVerifyOtp = async () => {
-    if (loading) return;
-    setLoading(true);
-    setErrorMessage("");
-    setSuccessMessage("");
-    const otpCode = otp.join("");
-    setValue("otp", otpCode);
-    const isValid = await trigger("otp");
-    if (!isValid) {
-      setLoading(false);
-      return;
-    }
-    if (otpTimer <= 0) {
-      setErrorMessage(
-        "OTP sudah kadaluarsa, silakan kirim ulang OTP"
-      );
-      setLoading(false);
-      return;
-    }
-    try {
-      const response = await api.post("/auth/verify-otp",
-        {
-          otp: otpCode,
-          otpToken,
-        }
-      );
-      if (response.data.status) {
-        dispatch(
-          setAuthData({
-            token: response.data.token,
-            user: response.data.user,
-          })
-        );
-        setSuccessMessage("Verifikasi OTP berhasil");
-        setTimeout(() => {
-          router.push("/dashboard");
-        }, 1000);
-      }
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        const message =
-          error.response?.data?.message || "OTP gagal";
+  useEffect(() => {
+    if (!expired_at) return;
 
-        setErrorMessage(message);
+    const updateTimer = () => {
+      const remaining = Math.max(
+        0,
+        Math.floor((expired_at - Date.now()) / 1000)
+      );
+
+      setTimeLeft(remaining);
+    };
+
+    // Jalankan sekali saat halaman dibuka
+    updateTimer();
+
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [expired_at]);
+
+  const handleVerifyOtp = async (data: OtpFormData) => {
+    if (loading || isExpired) {
+      toast.error("Kode OTP telah kadaluarsa.");
+      return;
+    }
+
+    if (loading) return;
+
+    setLoading(true);
+
+    try {
+      const payload: VerifyOtpRequest = {
+        reference: reference!,
+        otp: data.otp,
+      };
+
+      const response = await api.post<ApiResponse<AuthResponse>>(
+        "/auth/login/verify-otp",
+        payload
+      );
+
+      const authData = response.data.data;
+
+      dispatch(setAuthData(authData));
+
+      localStorage.setItem("token", authData.token);
+      localStorage.setItem("token_type", authData.token_type);
+
+      toast.success(response.data.message);
+
+      router.push("/dashboard");
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        toast.error(
+          error.response?.data?.message ??
+            "Tidak dapat terhubung ke server."
+        );
       } else {
-        setErrorMessage("Terjadi kesalahan");
+        toast.error("Terjadi kesalahan.");
       }
     } finally {
       setLoading(false);
@@ -145,31 +120,43 @@ export default function OtpForm() {
   };
 
   const handleResendOtp = async () => {
+    if (resending) return;
+
+    if (!login) {
+      toast.error("Data login tidak ditemukan.");
+      router.replace("/login");
+      return;
+    }
+
+    setResending(true);
+
     try {
-      setErrorMessage("");
-      setSuccessMessage("");
-      const response = await api.post("/auth/resend-otp", {
-        otpToken,
-      });
-      if (response.data.status) {
-        dispatch(
-          setOtpData({
-            otpToken: response.data.otpToken,
-            otpExpiredAt: response.data.otpExpiredAt,
-            user: response.data.user,
-          })
-        );
-        setOtp(["", "", "", "", "", ""]);
-        setResendTimer(30);
-        setSuccessMessage("OTP berhasil dikirim ulang");
-      }
-    } catch (error: unknown) {
+      const response = await api.post<ApiResponse<LoginResponse>>(
+        "/auth/otp/resend",
+        {
+          login
+        }
+      );
+
+      dispatch(
+        setOtpData({
+          ...response.data.data,
+          login,
+        })
+      );
+      reset({ otp: "" });
+      toast.success(response.data.message);
+    } catch (error) {
       if (axios.isAxiosError(error)) {
-        setErrorMessage(
-          error.response?.data?.message ||
-          "Gagal mengirim ulang OTP"
+        toast.error(
+          error.response?.data?.message ??
+            "Tidak dapat terhubung ke server."
         );
+      } else {
+        toast.error("Terjadi kesalahan.");
       }
+    } finally {
+      setResending(false);
     }
   };
 
@@ -188,12 +175,7 @@ export default function OtpForm() {
             />
           </div>
           <div>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleVerifyOtp();
-              }}
-            >
+            <form onSubmit={handleSubmit(handleVerifyOtp)}>
               {/* Description */}
               <div className="mb-6 text-center">
                 <p className="text-[20px] leading-8 text-gray-500">
@@ -201,7 +183,7 @@ export default function OtpForm() {
                 </p>
 
                 <p className="text-[20px] font-semibold text-gray-700">
-                  {user?.email}
+                  {sent_to}
                 </p>
 
                 <p className="text-[20px] leading-8 text-gray-500">
@@ -212,54 +194,49 @@ export default function OtpForm() {
                   yang diterima pada kolom di bawah.
                 </p>
               </div>
-              {/* Alert Success */}
-              {successMessage && (
-                <div className="mb-5">
-                  <Alert>
-                    <AlertTitle>Berhasil</AlertTitle>
-                    <AlertDescription>
-                      {successMessage}
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
-              {/* Alert Success */}
-              {/* Alert Error */}
-              {errorMessage && (
-                <div className="mb-5">
-                  <Alert variant="destructive">
-                    <AlertTitle>
-                      Verifikasi Gagal
-                    </AlertTitle>
-                    <AlertDescription>
-                      {errorMessage}
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
-              {/* Alert Error */}
+              
 
               {/* OTP Input */}
               <div className="mb-5">
-                <OtpInput
-                  value={otp}
-                  onChange={(value) => {
-                    setOtp(value);
-                    const otpCode = value.join("");
-                    // hanya validasi kalau user sudah pernah klik verify
-                    if (errors.otp) {
-                      setValue("otp", otpCode, {
-                        shouldValidate: true,
-                      });
-                    }
-                    setErrorMessage("");
-                    setSuccessMessage("");
-                  }}
-                  disabled={otpTimer <= 0}
+                <Controller
+                  name="otp"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      placeholder="INPUT KODE OTP"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={11} // 6 angka + 5 spasi
+                      disabled={loading || isExpired}
+                      value={field.value.split("").join(" ")}
+                      onChange={(e) => {
+                        // Hilangkan semua selain angka
+                        const numeric = e.target.value.replace(/\D/g, "");
+
+                        // Batasi hanya 6 digit
+                        field.onChange(numeric.slice(0, 6));
+                      }}
+                      className="
+                        h-[55px]
+                        rounded-2xl
+                        bg-[#E9E9E9]
+                        border-gray-300
+                        text-center
+                        !text-[25px]
+                        font-bold
+                        tracking-normal
+                        placeholder:text-center
+                        placeholder:text-[22px]
+                        focus:border-blue-500
+                        focus:ring-2
+                        focus:ring-blue-200
+                      "
+                    />
+                  )}
                 />
 
                 {errors.otp && (
-                  <p className="mt-2 text-center text-sm text-red-500">
+                  <p className="mt-2 text-sm text-center text-red-500">
                     {errors.otp.message}
                   </p>
                 )}
@@ -273,7 +250,7 @@ export default function OtpForm() {
                 </p>
 
                 <p className="text-[22px] font-bold text-gray-700">
-                  {minutes} menit {seconds < 10 ? `0${seconds}` : seconds} detik
+                  {minutes} menit {seconds.toString().padStart(2, "0")} detik
                 </p>
               </div>  
               {/* Timer */}
@@ -282,33 +259,41 @@ export default function OtpForm() {
               <div className="mb-5">
                 <Button
                   type="submit"
-                  disabled={otpTimer <= 0 || loading}
-                  className="h-[55px] w-full rounded-2xl bg-[#0D5EF4] text-lg font-bold text-whitehover:bg-[#0B4ED0]"
-                >
-                  {loading
-                    ? "VERIFYING..."
-                    : otpTimer <= 0
-                    ? "OTP EXPIRED"
-                    : "VERIFIKASI OTP"
-                  }
-                </Button>
+                  disabled={loading || isExpired}
+                  className="h-[55px] w-full rounded-2xl bg-[#0D5EF4] text-lg font-bold text-white hover:bg-[#0B4ED0]"
+              >
+                  {loading ? "Memverifikasi..." : "VERIFIKASI OTP"}
+              </Button>
               </div>
               {/* Button Submit OTP */}
 
               {/* Button Resend OTP */}
               <div className="text-center">
-                {resendTimer > 0 ? (
-                  <p className="text-[18px] text-gray-500">
-                    Tunggu {resendTimer} detik untuk mengirim ulang OTP
-                  </p>
+                {isExpired ? (
+                  <>
+                    <p className="text-[18px] text-red-500 mb-2">
+                      Kode OTP telah kadaluarsa.
+                    </p>
+                    <button
+                      type="button"
+                      disabled={resending}
+                      onClick={handleResendOtp}
+                      className="
+                        text-[20px]
+                        font-semibold
+                        text-blue-600
+                        hover:underline
+                        disabled:text-gray-400
+                        disabled:cursor-not-allowed
+                      "
+                    >
+                      {resending ? "Mengirim..." : "Kirim Ulang OTP"}
+                    </button>
+                  </>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={handleResendOtp}
-                    className="text-[20px] font-semibold text-blue-600 hover:underline"
-                  >
-                    Kirim Ulang OTP
-                  </button>
+                  <p className="text-[18px] text-gray-500">
+                    Tunggu {timeLeft} detik untuk mengirim ulang OTP
+                  </p>
                 )}
               </div>
               {/* Button Resend OTP */}

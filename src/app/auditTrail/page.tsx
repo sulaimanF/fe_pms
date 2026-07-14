@@ -26,7 +26,7 @@ export default function AuditTrailPage() {
           <DataTablesColumnToggle table={table} />
 
           <div className="flex items-center gap-2">
-            <Button className="bg-[#0D5EF4] hover:bg-[#0B4FD1]">
+            <Button className="bg-blue-600 hover:bg-blue-700">
               Download Data
             </Button>
           </div>

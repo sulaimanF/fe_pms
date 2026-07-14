@@ -3,17 +3,32 @@
 import { DataTables, DataTablesSearch, DataTablesColumnToggle } from "@/components/tables/index";
 import { useDataTable } from "@/hooks/useDataTable";
 import { columns } from "./columns";
-import { userData } from "./data";
+// import { userData } from "./data";
+import { useUsers } from "@/hooks/useUsers";
 
 export default function UserManagementPage() {
+  const {
+    data,
+    isLoading,
+    error,
+  } = useUsers();
+
   const {
     table,
     globalFilter,
     setGlobalFilter,
   } = useDataTable({
-    data: userData,
+    data: data?.data ?? [],
     columns,
   });
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Terjadi kesalahan.</div>;
+  }
 
   return (
     <DataTables

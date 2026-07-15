@@ -3,6 +3,7 @@
 import AppSidebar from "@/components/layout/AppSidebar";
 import AppHeader from "@/components/layout/AppHeader";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function UserManagementLayout({
   children,

@@ -1,7 +1,20 @@
+export interface Role {
+  id: number;
+  code: string;
+  name: string;
+}
+
+export interface Outlet {
+  id: number;
+  organization_unit_id: number;
+  name: string;
+}
+
 export interface OrganizationUnit {
   id: number;
   name: string;
   code: string;
+  
 }
 
 export interface UserManagement {
@@ -23,6 +36,8 @@ export interface UserManagement {
   updated_at: string;
 
   organization_unit: OrganizationUnit;
+  roles: Role[];
+  outlets: Outlet[];
 }
 
 export interface Pagination {
@@ -34,7 +49,21 @@ export interface Pagination {
 
 export interface UserResponse {
   success: boolean;
+  http_code: number;
+  request_id: string | null;
   message: string;
   data: UserManagement[];
+  errors: unknown;
+  meta: unknown;
   pagination: Pagination;
+}
+
+export interface UserDetailResponse {
+  success: boolean;
+  http_code: number;
+  request_id: string | null;
+  message: string;
+  data: UserManagement;
+  errors: unknown;
+  meta: unknown;
 }

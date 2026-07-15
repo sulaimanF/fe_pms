@@ -1,9 +1,7 @@
 "use client";
 
 import { Search } from "lucide-react";
-
 import { Input } from "@/components/ui/input";
-
 import type { DataTablesSearchProps } from "./types";
 
 export default function DataTablesSearch({

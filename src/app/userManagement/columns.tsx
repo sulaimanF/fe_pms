@@ -28,6 +28,8 @@ export const columns: ColumnDef<UserManagement>[] = [
   {
     accessorKey: "role",
     header: "Role",
+    cell: ({ row }) =>
+    row.original.roles.map(role => role.name).join(", "),
   },
   {
     accessorKey: "kantorWilayah",
@@ -37,7 +39,10 @@ export const columns: ColumnDef<UserManagement>[] = [
   {
     accessorKey: "outlet",
     header: "Outlet Kelolaan",
-    cell: ({ row }) => row.original.organization_unit.name,
+      cell: ({ row }) =>
+      row.original.outlets
+        .map(outlet => outlet.name)
+        .join(", "),
   },
   {
     id: "actions",

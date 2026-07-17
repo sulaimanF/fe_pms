@@ -1,63 +1,91 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowUpRight } from "lucide-react";
-// import { outletData } from "./data";
 import OutletModal from "./outletModal";
 import { useParams } from "next/navigation";
 import { useUser } from "@/hooks/useUsers";
+import { Controller, useForm } from "react-hook-form";
+import { useRoles } from "@/hooks/useRoles";
+import { useOrganizationUnits } from "@/hooks/useOrganizationUnits";
+import { useOutlets } from "@/hooks/useOutlets";
+
+type FormValues = {
+  username: string;
+  email: string;
+  role: string;
+  organizationUnit: string;
+  status: string;
+};
 
 export default function CreateUserPage() {
 
   const [openModal, setOpenModal] = useState(false);
-
-  const [selectedOutlet, setSelectedOutlet] = useState<number[]>([
-    1,
-    2,
-    5,
-  ]);
-
+  const [selectedOutlet, setSelectedOutlet] = useState<number[]>([]);
+  
   const params = useParams();
   const id = Number(params.id);
-  const {
-    data,
-    isLoading,
-  } = useUser(id);
 
-  const form = useForm<FormValues>();
+  const { data } = useUser(id);
+  const user = data?.data;
+
+  const { data: roleResponse } = useRoles();
+  const roles = roleResponse?.data ?? [];
+
+  const { data: organizationResponse } = useOrganizationUnits();
+  const organizationUnits = organizationResponse?.data ?? [];
+
+  const form = useForm<FormValues>({
+    defaultValues: {
+      username: "",
+      email: "",
+      role: "",
+      organizationUnit: "",
+      status: "",
+    },
+  });
+
+  const organizationUnitId = form.watch("organizationUnit");
+
+  const { data: outletResponse } = useOutlets(
+    organizationUnitId
+      ? Number(organizationUnitId)
+      : undefined
+  );
+
+  const outlets = outletResponse?.data ?? [];
 
   useEffect(() => {
-    if (user) {
-        form.reset({
-            username: user.username,
-            email: user.email,
-            organizationUnit: String(user.organization_unit_id),
-            status: user.is_active ? "active" : "inactive",
-        });
-    }
-}, [user]);
+    if (!user) return;
 
-const [selectedOutlet, setSelectedOutlet] = useState<number[]>([]);
+    form.reset({
+      username: user.username,
+      email: user.email,
+      role: String(user.roles[0]?.id ?? ""),
+      organizationUnit: String(user.organization_unit.id),
+      status: user.is_active ? "active" : "inactive",
+    });
+  }, [user, form]);
 
-useEffect(() => {
-  if(user){
+  useEffect(() => {
+    if (!user) return;
+
     setSelectedOutlet(
-      user.outlets.map(
-        outlet => outlet.id
-      )
+      user.organization_unit.outlets.map((outlet) => outlet.id)
     );
-  }
-}, [user]);
+  }, [user]);
 
-  // const outletName = useMemo(() => {
-  //   return outletData
-  //     .filter((item) => selectedOutlet.includes(item.id))
-  //     .map((item) => item.nama)
-  //     .join(", ");
-  // }, [selectedOutlet]);
+  const outletName = useMemo(() => {
+    return outlets
+      .filter((item) =>
+        selectedOutlet.includes(item.id)
+      )
+      .map((item) => item.name)
+      .join(", ");
+  }, [outlets, selectedOutlet]);
 
   return (
     <div className="max-w-3xl space-y-8">
@@ -78,31 +106,58 @@ useEffect(() => {
         />
 
         <label>Role</label>
-        <Select defaultValue="SAS">
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="SAS">SAS</SelectItem>
-            <SelectItem value="Admin">Admin</SelectItem>
-          </SelectContent>
-        </Select>
+        <Controller
+          control={form.control}
+          name="role"
+          render={({ field }) => (
+            <Select
+              value={field.value}
+              onValueChange={field.onChange}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Pilih Role" />
+              </SelectTrigger>
+
+              <SelectContent>
+                {roles.map((role) => (
+                  <SelectItem
+                    key={role.id}
+                    value={String(role.id)}
+                  >
+                    {role.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
 
         <label>Kantor Wilayah</label>
-        <Select
-          value={form.watch("organizationUnit")}
-          onValueChange={(value) =>
-            form.setValue("organizationUnit", value)
-          }
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1">Kantor Wilayah 1</SelectItem>
-            <SelectItem value="2">Kantor Wilayah 2</SelectItem>
-          </SelectContent>
-        </Select>
+        <Controller
+          control={form.control}
+          name="organizationUnit"
+          render={({ field }) => (
+            <Select
+              value={field.value}
+              onValueChange={field.onChange}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Pilih Kantor Wilayah" />
+              </SelectTrigger>
+
+              <SelectContent>
+                {organizationUnits.map((item) => (
+                  <SelectItem
+                    key={item.id}
+                    value={String(item.id)}
+                  >
+                    {item.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
 
         <label>Outlet Kelolaan</label>
         <div
@@ -114,15 +169,29 @@ useEffect(() => {
         </div>
 
         <label>Status</label>
-        <Select defaultValue="active">
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
+        <Controller
+          control={form.control}
+          name="status"
+          render={({ field }) => (
+            <Select
+              value={field.value}
+              onValueChange={field.onChange}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="active">
+                  Active
+                </SelectItem>
+                <SelectItem value="inactive">
+                  Inactive
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        />
 
       </div>
 
@@ -135,7 +204,7 @@ useEffect(() => {
       <OutletModal
         open={openModal}
         onOpenChange={setOpenModal}
-        data={outletData}
+        data={outlets}
         selected={selectedOutlet}
         setSelected={setSelectedOutlet}
       />

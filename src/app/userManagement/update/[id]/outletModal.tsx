@@ -3,12 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-
-interface Outlet {
-  id: number;
-  nama: string;
-  tipe: string;
-}
+import { Outlet } from "@/types/outlet";
 
 interface Props {
   open: boolean;
@@ -56,8 +51,8 @@ export default function OutletModal({
                     onCheckedChange={() => handleChecked(item.id)}
                   />
                 </td>
-                <td>{item.nama}</td>
-                <td>{item.tipe}</td>
+                <td>{item.name}</td>
+                <td>{item.code}</td>
               </tr>
             ))}
           </tbody>

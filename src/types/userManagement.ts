@@ -1,21 +1,7 @@
-export interface Role {
-  id: number;
-  code: string;
-  name: string;
-}
-
-export interface Outlet {
-  id: number;
-  organization_unit_id: number;
-  name: string;
-}
-
-export interface OrganizationUnit {
-  id: number;
-  name: string;
-  code: string;
-  
-}
+import { Role } from "./role";
+import { Outlet } from "./outlet";
+import { OrganizationUnit } from "./organizationUnit";
+import { ApiResponse } from "./api";
 
 export interface UserManagement {
   id: number;
@@ -47,23 +33,29 @@ export interface Pagination {
   last_page: number;
 }
 
-export interface UserResponse {
-  success: boolean;
-  http_code: number;
-  request_id: string | null;
-  message: string;
-  data: UserManagement[];
-  errors: unknown;
-  meta: unknown;
+export interface UserResponse extends ApiResponse<UserManagement[]> {
   pagination: Pagination;
 }
 
-export interface UserDetailResponse {
-  success: boolean;
-  http_code: number;
-  request_id: string | null;
-  message: string;
-  data: UserManagement;
-  errors: unknown;
-  meta: unknown;
-}
+export interface UserDetailResponse extends ApiResponse<UserManagement> {}
+
+// export interface UserResponse {
+//   success: boolean;
+//   http_code: number;
+//   request_id: string | null;
+//   message: string;
+//   data: UserManagement[];
+//   errors: unknown;
+//   meta: unknown;
+//   pagination: Pagination;
+// }
+
+// export interface UserDetailResponse {
+//   success: boolean;
+//   http_code: number;
+//   request_id: string | null;
+//   message: string;
+//   data: UserManagement;
+//   errors: unknown;
+//   meta: unknown;
+// }

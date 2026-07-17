@@ -1,17 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-
-// export type UserManagement = {
-//   loginID: string;
-//   email: string;
-//   role: string;
-//   kantorWilayah: string;
-//   outlate: string;
-// };
-
 import { UserManagement } from "@/types/userManagement";
-
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -46,11 +36,8 @@ export const columns: ColumnDef<UserManagement>[] = [
   },
   {
     id: "actions",
-
     header: "Actions",
-
     enableHiding: false,
-
     cell: ({ row }) => (
       <Button
       variant="ghost"

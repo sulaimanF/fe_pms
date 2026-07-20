@@ -1,4 +1,4 @@
-import UserManagementSkeleton from "@/components/skeletons/UserManagementSkeleton";
+import UserManagementSkeleton from "@/components/skeletons/TableSkeleton";
 
 export default function Loading() {
   return <UserManagementSkeleton />;

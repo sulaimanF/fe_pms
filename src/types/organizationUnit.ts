@@ -4,6 +4,7 @@ export interface OrganizationUnit {
   id: number;
   code: string;
   name: string;
+  // outlets: Outlet[];
 }
 
 export type OrganizationUnitResponse = ApiResponse<OrganizationUnit[]>;

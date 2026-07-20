@@ -40,19 +40,19 @@ export const columns: ColumnDef<UserManagement>[] = [
     enableHiding: false,
     cell: ({ row }) => (
       <Button
-      variant="ghost"
-      size="icon"
-      title="Edit User"
-      // onClick={() => handleEdit(row.original)}
-      onClick={() => {
-        console.log("Edit", row.original);
-      }}
-    >
+        variant="ghost"
+        size="icon"
+        title="Edit User"
+        // onClick={() => handleEdit(row.original)}
+        onClick={() => {
+          console.log("Edit", row.original);
+        }}
+      >
       
-    <Link href={`/userManagement/update/${row.original.id}`}>
-      <Pencil className="h-4 w-4 cursor-pointer" />
-    </Link>
-    </Button>
+        <Link href={`/userManagement/update/${row.original.id}`}>
+          <Pencil className="h-4 w-4 cursor-pointer" />
+        </Link>
+      </Button>
     ),
   }
 ];

@@ -12,6 +12,8 @@ import { Controller, useForm } from "react-hook-form";
 import { useRoles } from "@/hooks/useRoles";
 import { useOrganizationUnits } from "@/hooks/useOrganizationUnits";
 import { useOutlets } from "@/hooks/useOutlets";
+import { useWatch } from "react-hook-form";
+import FormSkeleton from "@/components/skeletons/FormSkeleton"
 
 type FormValues = {
   username: string;
@@ -21,16 +23,21 @@ type FormValues = {
   status: string;
 };
 
-export default function CreateUserPage() {
+export default function UpdateUserPage() {
 
-  const [openModal, setOpenModal] = useState(false);
-  const [selectedOutlet, setSelectedOutlet] = useState<number[]>([]);
-  
   const params = useParams();
   const id = Number(params.id);
 
-  const { data } = useUser(id);
+  const {
+    data,
+    isLoading,
+    isError,
+  } = useUser(id);
+
   const user = data?.data;
+
+  const [openModal, setOpenModal] = useState(false);
+  const [selectedOutlet, setSelectedOutlet] = useState<number[]>([]);
 
   const { data: roleResponse } = useRoles();
   const roles = roleResponse?.data ?? [];
@@ -48,7 +55,13 @@ export default function CreateUserPage() {
     },
   });
 
-  const organizationUnitId = form.watch("organizationUnit");
+  const organizationUnitId = useWatch({
+    control: form.control,
+    name: "organizationUnit",
+  });
+
+  // console.log("organizationUnits", organizationUnits);
+  // console.log("form value", form.watch("organizationUnit"));
 
   const { data: outletResponse } = useOutlets(
     organizationUnitId
@@ -74,7 +87,7 @@ export default function CreateUserPage() {
     if (!user) return;
 
     setSelectedOutlet(
-      user.organization_unit.outlets.map((outlet) => outlet.id)
+      user.outlets?.map((outlet) => outlet.id) ?? []
     );
   }, [user]);
 
@@ -87,9 +100,19 @@ export default function CreateUserPage() {
       .join(", ");
   }, [outlets, selectedOutlet]);
 
+  if (isLoading) {
+    return <FormSkeleton />;
+  }
+
+  if (isError) {
+    return (
+      <div>Terjadi kesalahan.</div>
+    );
+  }
+
   return (
     <div className="max-w-3xl space-y-8">
-      <h1 className="text-2xl font-bold">Edit User</h1>
+      <h1 className="text-2xl font-bold">Update User</h1>
 
       <div className="grid grid-cols-[180px_1fr] gap-x-8 gap-y-6">
 

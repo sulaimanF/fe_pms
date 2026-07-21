@@ -4,6 +4,9 @@ export interface Role {
   id: number;
   code: string;
   name: string;
+  description: string;
+  permissions_count: number;
+  users_count: number;
 }
 
 export type RoleResponse = ApiResponse<Role[]>;

@@ -1,8 +1,5 @@
 import axios from "@/lib/axios";
-import {
-  UserResponse,
-  UserDetailResponse,
-} from "@/types/userManagement";
+import { UserResponse, UserDetailResponse } from "@/types/userManagement";
 
 export const getUsers = async () => {
   const response = await axios.get<UserResponse>("/users");

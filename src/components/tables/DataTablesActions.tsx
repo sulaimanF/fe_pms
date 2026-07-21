@@ -1,7 +1,7 @@
 "use client";
 
 import { Eye, Pencil, Trash2, MoreHorizontal } from "lucide-react";
-
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -14,6 +14,7 @@ import {
 interface DataTablesActionsProps<TData> {
   row: TData;
   variant?: "dropdown" | "inline";
+  editHref?: string;
   onView?: (row: TData) => void;
   onEdit?: (row: TData) => void;
   onDelete?: (row: TData) => void;
@@ -22,6 +23,7 @@ interface DataTablesActionsProps<TData> {
 export default function DataTablesActions<TData>({
   row,
   variant = "dropdown",
+  editHref,
   onView,
   onEdit,
   onDelete,
@@ -39,15 +41,28 @@ export default function DataTablesActions<TData>({
         </Button>
       )}
 
-      {onEdit && (
+      {editHref ? (
         <Button
+          asChild
           variant="ghost"
           size="icon"
           title="Edit"
-          onClick={() => onEdit(row)}
         >
-          <Pencil className="h-4 w-4 text-blue-600 hover:text-blue-700" />
+          <Link href={editHref}>
+            <Pencil className="h-4 w-4 text-blue-600 hover:text-blue-700" />
+          </Link>
         </Button>
+      ) : (
+        onEdit && (
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Edit"
+            onClick={() => onEdit(row)}
+          >
+            <Pencil className="h-4 w-4 text-blue-600 hover:text-blue-700" />
+          </Button>
+        )
       )}
 
       {onDelete && (
@@ -86,13 +101,22 @@ export default function DataTablesActions<TData>({
           </DropdownMenuItem>
         )}
 
-        {onEdit && (
-          <DropdownMenuItem
-            onClick={() => onEdit(row)}
-          >
-            <Pencil className="mr-2 h-4 w-4 text-blue-600" />
-            Edit
+        {editHref ? (
+          <DropdownMenuItem asChild>
+            <Link href={editHref}>
+              <Pencil className="mr-2 h-4 w-4 text-blue-600" />
+              Edit
+            </Link>
           </DropdownMenuItem>
+        ) : (
+          onEdit && (
+            <DropdownMenuItem
+              onClick={() => onEdit(row)}
+            >
+              <Pencil className="mr-2 h-4 w-4 text-blue-600" />
+              Edit
+            </DropdownMenuItem>
+          )
         )}
 
         {onDelete && (

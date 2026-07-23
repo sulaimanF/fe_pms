@@ -11,7 +11,7 @@ import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
-import { setOtpData, setToken, setUser } from "@/store/slices/authSlice";
+import { setOtpData, setAuthData } from "@/store/slices/authSlice";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { otpSchema, OtpFormData } from "@/validations/otpSchema";
 import { RootState } from "@/store/store";
@@ -102,20 +102,19 @@ export default function OtpForm() {
       localStorage.setItem("token", authData.token);
       localStorage.setItem("token_type", authData.token_type);
 
+      const me = await getMe();
+
       dispatch(
-        setToken({
-          token: response.data.data.token,
-          token_type: response.data.data.token_type,
+        setAuthData({
+          token: authData.token,
+          token_type: authData.token_type,
+          user: me.data,
         })
       );
 
-      const me = await getMe();
-
-      dispatch(setUser(me.data));
-
       toast.success(response.data.message);
 
-      router.push("/dashboard");
+      router.replace("/dashboard");
     } catch (error) {
       if (axios.isAxiosError(error)) {
         toast.error(

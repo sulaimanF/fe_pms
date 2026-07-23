@@ -2,9 +2,6 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Role } from "@/types/role"
-import { Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import DataTablesActions from "@/components/tables/DataTablesActions";
 
 export const columns = ( onDelete: (id: number) => void): ColumnDef<Role>[] => [

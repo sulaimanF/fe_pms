@@ -18,6 +18,16 @@ export interface VerifyOtpRequest {
   otp: string;
 }
 
+export interface AuthRole {
+  id: number;
+  name: string;
+}
+
+export interface AuthOrganizationUnit {
+  id: number;
+  name: string;
+}
+
 // user
 export interface AuthUser {
   id: number;
@@ -36,6 +46,9 @@ export interface AuthUser {
   password_changed_at: string | null;
   created_at: string;
   updated_at: string;
+
+  roles: AuthRole[];
+  organization_unit: AuthOrganizationUnit | null;
 }
 
 // 

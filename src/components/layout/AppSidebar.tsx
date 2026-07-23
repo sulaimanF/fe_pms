@@ -22,6 +22,14 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
+import { useAppSelector } from "@/store/hooks";
+import { useDispatch } from "react-redux";
+import { logout as logoutAction } from "@/store/slices/authSlice";
+import { useLogout } from "@/hooks/useAuth";
+import { useState } from "react";
+import ConfirmDialogsLogout from "@/components/dialogs/ConfirmDiloagsLogout";
+import { logout } from "@/store/slices/authSlice";
+import LoadingOverlay from "../ui/LoadingOverlay";
 
 type NavLink = {
     icon: React.ElementType;
@@ -64,20 +72,55 @@ const navItems: NavSection[] = [
 ];
 
 export default function AppSidebar() {
+  const user = useAppSelector(
+    (state) => state.auth.user
+  );
+  
   const pathname = usePathname();
   const router = useRouter();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const handleLogout = async () => {
+  const dispatch = useDispatch();
+  const [openLogoutDialog, setOpenLogoutDialog] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  // const confirmLogout = async () => {
+  //   setLogoutLoading(true);
+  //   try {
+  //     await api.post("/auth/logout");
+
+  //     dispatch(logout());
+
+  //     localStorage.removeItem("token");
+  //     localStorage.removeItem("token_type");
+
+  //     router.replace("/login");
+  //   } catch (err) {
+  //     console.error(err);
+  //   } finally {
+  //     setLogoutLoading(false);
+  //   }
+  // };
+
+  const confirmLogout = async () => {
+    setOpenLogoutDialog(false);
+    setLoggingOut(true);
+
     try {
-      await api.post('/logout');
+      await api.post("/auth/logout");
+
+      dispatch(logout());
+
+      localStorage.removeItem("token");
+      localStorage.removeItem("token_type");
+
+      router.replace("/login");
     } catch (err) {
       console.error(err);
-    } finally {
-      localStorage.removeItem('token');
-      router.replace('/login');
+
+      setLoggingOut(false);
     }
-  }
+  };
 
   return (
     <Sidebar
@@ -108,11 +151,11 @@ export default function AppSidebar() {
           {!collapsed && (
             <>
               <h3 className="text-sidebar-foreground font-medium">
-                M. Rafly Rivaldi
+                {user?.display_name ?? user?.full_name ?? user?.username}
               </h3>
 
               <p className="text-sidebar-foreground/80 text-sm">
-                CXD
+                {user?.roles?.[0]?.name ?? "-"}
               </p>
             </>
           )}
@@ -192,7 +235,7 @@ export default function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              onClick={handleLogout}
+              onClick={() => setOpenLogoutDialog(true)}
               tooltip={collapsed ? "Logout" : undefined}
               className={`
                 h-10
@@ -214,6 +257,19 @@ export default function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+      <ConfirmDialogsLogout
+        open={openLogoutDialog}
+        onOpenChange={setOpenLogoutDialog}
+        title="Logout"
+        description="Are you sure you want to logout from this account?"
+        onConfirm={confirmLogout}
+        loading={logoutLoading}
+      />
+
+      <LoadingOverlay
+        open={loggingOut}
+        text="Logging out..."
+      />
     </Sidebar>
   );
 }

@@ -43,13 +43,25 @@ const authSlice = createSlice({
     },
 
     // Simpan token setelah OTP berhasil
-    setAuthData: (
+    // setAuthData: (
+    //   state,
+    //   action: PayloadAction<AuthResponse>
+    // ) => {
+    //   state.token = action.payload.token;
+    //   state.token_type = action.payload.token_type;
+    //   state.user = action.payload.user;
+    //   state.isAuthenticated = true;
+    // },
+
+    setToken(
       state,
-      action: PayloadAction<AuthResponse>
-    ) => {
+      action: PayloadAction<{
+        token: string;
+        token_type: string;
+      }>
+    ) {
       state.token = action.payload.token;
       state.token_type = action.payload.token_type;
-      state.user = action.payload.user;
       state.isAuthenticated = true;
       state.login = null;
       state.reference = null;
@@ -58,24 +70,34 @@ const authSlice = createSlice({
       state.expired_at = null;
     },
 
-    // Logout
-    // logout: (state) => {
-    //   state.reference = null;
-    //   state.expires_in = null;
-    //   state.sent_to = null;
+    setUser(
+      state,
+      action: PayloadAction<AuthUser>
+    ) {
+      state.user = action.payload;
+    },
 
-    //   state.token = null;
-    //   state.token_type = null;
-    //   state.user = null;
-    //   state.isAuthenticated = false;
-    // },
+    // Logout
+    logout: (state) => {
+      state.login = null;
+      state.reference = null;
+      state.expires_in = null;
+      state.expired_at = null;
+      state.sent_to = null;
+
+      state.token = null;
+      state.token_type = null;
+      state.user = null;
+      state.isAuthenticated = false;
+    },
   },
 });
 
 export const {
   setOtpData,
-  setAuthData,
-  // logout,
+  setToken,
+  setUser,
+  logout,
 } = authSlice.actions;
 
 export default authSlice.reducer;

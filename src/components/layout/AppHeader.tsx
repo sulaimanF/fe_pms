@@ -3,8 +3,14 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Bell, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAppSelector } from "@/store/hooks";
 
 export default function AppHeader() {
+
+  const user = useAppSelector(
+    (state) => state.auth.user
+  );
+
   return (
     <header className="flex h-16 items-center justify-between border-b bg-white px-8">
       <SidebarTrigger/>
@@ -18,7 +24,7 @@ export default function AppHeader() {
         <div className="flex items-center gap-2">
           <User className="h-5 w-5"/>
           <span className="text-sm font-medium">
-            M. Rafly Rivaldi
+            {user?.display_name ?? user?.full_name ?? user?.username}
           </span>
         </div>
 

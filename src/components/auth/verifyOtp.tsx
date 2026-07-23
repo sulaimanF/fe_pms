@@ -11,12 +11,13 @@ import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
-import { setAuthData, setOtpData } from "@/store/slices/authSlice";
+import { setOtpData, setToken, setUser } from "@/store/slices/authSlice";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { otpSchema, OtpFormData } from "@/validations/otpSchema";
 import { RootState } from "@/store/store";
 import type { VerifyOtpRequest, AuthResponse, LoginResponse } from "@/types/auth";
 import type { ApiResponse } from "@/types/common";
+import { getMe } from "@/services/auth.services";
 
 export default function OtpForm() {
   const router = useRouter();
@@ -97,10 +98,20 @@ export default function OtpForm() {
 
       const authData = response.data.data;
 
-      dispatch(setAuthData(authData));
-
+      // dispatch(setAuthData(authData));
       localStorage.setItem("token", authData.token);
       localStorage.setItem("token_type", authData.token_type);
+
+      dispatch(
+        setToken({
+          token: response.data.data.token,
+          token_type: response.data.data.token_type,
+        })
+      );
+
+      const me = await getMe();
+
+      dispatch(setUser(me.data));
 
       toast.success(response.data.message);
 

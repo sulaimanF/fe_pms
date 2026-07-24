@@ -5,31 +5,25 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-
-const tabs = [
-  "Dashboard",
-  "Audit Trail",
-  "Kuesioner",
-  "Response",
-  "User Management",
-  "Role Management",
-  "Office Data",
-];
-
-const permissions = {
-  Dashboard: ["Dashboard", "Statistik"],
-  "Audit Trail": ["Audit Trail"],
-  Kuesioner: ["Kuesioner"],
-  Response: ["Response"],
-  "User Management": ["User Management"],
-  "Role Management": ["Role Management"],
-  "Office Data": ["Office Data"],
-};
+import { useState, useEffect } from "react";
+import { useMenuTree } from "@/hooks/useMenu";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function RoleForm() {
   
-  const [activeTab, setActiveTab] = useState("Dashboard");
+  const { data: menuData, isLoading: menuLoading } = useMenuTree();
+
+  const { data: permissionData, isLoading: permissionLoading } = usePermissions();
+
+  const menus = menuData?.data ?? [];
+
+  const [activeTab, setActiveTab] = useState("");
+
+  useEffect(() => {
+    if (!activeTab && menus.length > 0) {
+      setActiveTab(menus[0].code);
+    }
+  }, [menus, activeTab]);
 
   return (
     <div className="space-y-6">
@@ -37,9 +31,11 @@ export default function RoleForm() {
         <CardContent className="p-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <Input
+              className="h-14 rounded-xl"
               placeholder="Role Name"
             />
             <Input
+              className="h-14 rounded-xl"
               placeholder="Description Role"
             />
           </div>
@@ -51,126 +47,111 @@ export default function RoleForm() {
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
-            defaultValue="overview"
           >
             <TabsList
+              variant="line"
               className="
-                h-14
-    w-full
-    justify-start
-    border-b
-    border-gray-300
-    rounded-none
-    bg-transparent
-    p-0
+                w-full
+                h-10
+                justify-start
+                rounded-none
+                bg-transparent
+                p-0
               "
             >
-              {tabs.map((tab) => (
+              {menus.map((menu) => (
                 <TabsTrigger
-                  key={tab}
-                  value={tab}
+                  key={menu.id}
+                  value={menu.code}
                   className="
                     relative
-    h-[64px]
-    rounded-none
-    border-b-[3px]
-    border-transparent
-    px-10
-    text-sm
-    font-medium
-    text-gray-700
-    shadow-none
-
-    data-[state=active]:border-[#2563EB]
-    data-[state=active]:text-[#2563EB]
-    data-[state=active]:shadow-none
-    data-[state=active]:bg-transparent
-                    
+                    h-10
+                    rounded-none
+                    text-[15px]
+                    font-medium
+                    data-active:text-blue-600
+                    data-active:after:bg-blue-600
+                    data-active:after:h-[3px]
+                    data-active:after:opacity-100
                   "
                 >
-                  {tab}
+                  {menu.label}
                 </TabsTrigger>
               ))}
             </TabsList>
 
-            {tabs.map((tab) => (
+            {menus.map((menu) => (
               <TabsContent
-                key={tab}
-                value={tab}
+                key={menu.id}
+                value={menu.code}
                 className="m-0"
               >
                 <table className="w-full">
-                  <thead className="border-b">
+                  <thead>
                     <tr className="h-12">
-                      <th className="w-[15%] px-6 text-left font-medium">
-                        Name
-                      </th>
-
-                      <th className="w-[10%] text-center font-medium">
-                        All Access
-                      </th>
-
-                      <th className="w-[10%] text-center font-medium">
-                        View
-                      </th>
-
-                      <th className="w-[10%] text-center font-medium">
-                        Create
-                      </th>
-
-                      <th className="w-[10%] text-center font-medium">
-                        Edit
-                      </th>
-
-                      <th className="w-[10%] text-center font-medium">
-                        Delete
-                      </th>
+                      <th className="w-[20%] text-left px-6">Menu</th>
+                      <th className="text-center">All Access</th>
+                      <th className="text-center">View</th>
+                      <th className="text-center">Create</th>
+                      <th className="text-center">Update</th>
+                      <th className="text-center">Delete</th>
                     </tr>
                   </thead>
 
                   <tbody>
-                    {permissions[
-                      tab as keyof typeof permissions
-                    ].map((menu) => (
-                      <tr
-                        key={menu}
-                        className="h-14 border-b last:border-none"
-                      >
-                        <td className="px-4 py-3">
-                          {menu}
+
+                    {menu.children.length > 0 ? (
+                      menu.children.map((child) => (
+                        <tr key={child.id} className="border-b h-14">
+                          <td className="px-6">{child.label}</td>
+
+                          <td className="text-center">
+                            <Checkbox />
+                          </td>
+
+                          <td className="text-center">
+                            <Checkbox />
+                          </td>
+
+                          <td className="text-center">
+                            <Checkbox />
+                          </td>
+
+                          <td className="text-center">
+                            <Checkbox />
+                          </td>
+
+                          <td className="text-center">
+                            <Checkbox />
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td>{menu.label}</td>
+
+                        <td className="text-center">
+                          <Checkbox />
                         </td>
 
-                        <td>
-                          <div className="flex items-center justify-center">
-                            <Checkbox />
-                          </div>
+                        <td className="text-center">
+                          <Checkbox />
                         </td>
 
-                        <td>
-                          <div className="flex items-center justify-center">
-                            <Checkbox />
-                          </div>
+                        <td className="text-center">
+                          <Checkbox />
                         </td>
 
-                        <td>
-                          <div className="flex items-center justify-center">
-                            <Checkbox />
-                          </div>
+                        <td className="text-center">
+                          <Checkbox />
                         </td>
 
-                        <td>
-                          <div className="flex items-center justify-center">
-                            <Checkbox />
-                          </div>
-                        </td> 
-
-                        <td>
-                          <div className="flex items-center justify-center">
-                            <Checkbox />
-                          </div>
+                        <td className="text-center">
+                          <Checkbox />
                         </td>
                       </tr>
-                    ))}
+                    )}
+
                   </tbody>
                 </table>
               </TabsContent>

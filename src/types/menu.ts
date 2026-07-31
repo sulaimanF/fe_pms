@@ -12,8 +12,22 @@ export interface Menu {
   children: Menu[];
 }
 
+export interface MenuTree {
+  id: number;
+  parent_id: number | null;
+  code: string;
+  label: string;
+  icon: string | null;
+  route_name: string | null;
+  route_path: string | null;
+  menu_type: "group" | "item";
+  sort_order: number;
+  is_active: boolean;
+  children: MenuTree[];
+}
+
 export interface MenuTreeResponse {
   success: boolean;
   message: string;
-  data: Menu[];
+  data: MenuTree[];
 }

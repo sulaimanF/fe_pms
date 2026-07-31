@@ -7,7 +7,7 @@ export default function CreateRolePage() {
         Create Role
       </h1>
 
-      <RoleForm />
+      <RoleForm mode="create"/>
     </div>
   );
 }

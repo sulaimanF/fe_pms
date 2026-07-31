@@ -1,15 +1,30 @@
-import { ApiResponse } from "./api";
+// import { ApiResponse } from "./api";
+
+export interface RolePermission {
+  id: number;
+  code: string;
+  module: string;
+  resource: string;
+  action: string;
+}
 
 export interface Role {
   id: number;
   code: string;
   name: string;
   description: string;
-  permissions_count: number;
-  users_count: number;
+  landing_page: string;
+  is_active: boolean;
+
+  permissions: RolePermission[];
 }
 
-export type RoleResponse = ApiResponse<Role[]>;
+export interface RoleResponse {
+  success: boolean;
+  message: string;
+  data: Role;
+}
+// export type RoleResponse = ApiResponse<Role[]>;
 // export interface RoleResponse {
 //   success: boolean;
 //   http_code: number;

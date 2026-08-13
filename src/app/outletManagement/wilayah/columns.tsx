@@ -2,33 +2,47 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTablesActions } from "@/components/tables/index";
+import type { OrganizationUnit } from "@/types/organizationUnit";
 
-export type KantorWilayah = {
-  name: string;
-  kota: string;
-  jumlahWilayah: string;
-  jumlahKcp: string;
-};
-
-export const columns: ColumnDef<KantorWilayah>[] = [
+export const columns: ColumnDef<OrganizationUnit>[] = [
+  // {
+  //   accessorKey: "name",
+  //   header: "Nama",
+  //   size: 250,
+  // },
+  // {
+  //   accessorKey: "kota",
+  //   header: "Kota",
+  //   size: 250,
+  // },
+  // {
+  //   accessorKey: "jumlahWilayah",
+  //   header: "Jumlah KC",
+  //   size: 250,
+  // },
+  // {
+  //   accessorKey: "jumlahKcp",
+  //   header: "Jumlah KCP",
+  //   size: 250,
+  // },
   {
     accessorKey: "name",
     header: "Nama",
     size: 250,
   },
   {
-    accessorKey: "kota",
+    accessorKey: "city",
     header: "Kota",
     size: 250,
   },
   {
-    accessorKey: "jumlahWilayah",
-    header: "Jumlah KC",
+    accessorKey: "code",
+    header: "Kode",
     size: 250,
   },
   {
-    accessorKey: "jumlahKcp",
-    header: "Jumlah KCP",
+    accessorKey: "region_code",
+    header: "Kode Wilayah",
     size: 250,
   },
   {

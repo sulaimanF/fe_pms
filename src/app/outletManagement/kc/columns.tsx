@@ -1,30 +1,41 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import DataTablesActions from "@/components/tables/DataTablesActions";
+import type { OrganizationUnit } from "@/types/organizationUnit";
 
-export type Kcp = {
-  name: string;
-  kantorWilayah: string;
-  jumlahKcp: string;
-};
-
-import { Pencil, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
-export const columns: ColumnDef<Kcp>[] = [
+export const columns: ColumnDef<OrganizationUnit>[] = [
+  // {
+  //   accessorKey: "name",
+  //   header: "Nama",
+  //   size: 250,
+  // },
+  // {
+  //   accessorKey: "kantorWilayah",
+  //   header: "Kantor Wilayah",
+  //   size: 250,
+  // },
+  // {
+  //   accessorKey: "jumlahKcp",
+  //   header: "Jumlah KCP",
+  //   size: 250,
+  // },
   {
     accessorKey: "name",
     header: "Nama",
     size: 250,
   },
   {
-    accessorKey: "kantorWilayah",
+    id: "kantorWilayah",
     header: "Kantor Wilayah",
     size: 250,
+    cell: ({ row }) => {
+      return row.original.parent?.name ?? "-";
+    },
   },
   {
-    accessorKey: "jumlahKcp",
-    header: "Jumlah KCP",
+    accessorKey: "region_code",
+    header: "Kode Wilayah",
     size: 250,
   },
   {
@@ -33,30 +44,16 @@ export const columns: ColumnDef<Kcp>[] = [
     enableHiding: false,
     size: 150,
     cell: ({ row }) => (
-      <div className="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          title="Edit KCP"
-          // onClick={() => handleEdit(row.original)}
-          onClick={() => {
-            console.log("Edit", row.original);
-          }}
-        >
-          <Pencil className="h-4 w-4 text-blue-600 transition-colors hover:text-blue-700"/>
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          title="Delete"
-          onClick={() => {
-            console.log("Delete", row.original);
-          }}
-        >
-          <Trash2 className="h-4 w-4 text-red-600"/>
-        </Button>
-      </div>
-      
+      <DataTablesActions
+        variant="inline"
+        row={row.original}
+        onEdit={(data) => {
+          console.log("Edit", data);
+        }}
+        onDelete={(data) => {
+          console.log("Delete", data);
+        }}
+      />
     ),
   }
 ];

@@ -1,18 +1,24 @@
 
 "use client";
 
-import { DataTables, DataTablesSearch, DataTablesColumnToggle } from "@/components/tables/index";
+import { DataTables } from "@/components/tables/index";
 import { useDataTable } from "@/hooks/useDataTable";
 import { columns } from "./columns";
-import { kc } from "./data";
+import type { OrganizationUnit } from "@/types/organizationUnit";
 
-export default function KcTable() {
+interface KcTableProps {
+  data: OrganizationUnit[];
+}
+
+export default function KcTable({
+  data,
+}: KcTableProps) {
   const {
     table,
     globalFilter,
     setGlobalFilter,
   } = useDataTable({
-    data: kc,
+    data,
     columns,
   });
 

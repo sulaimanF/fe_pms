@@ -24,24 +24,139 @@ export default function RoleForm({
   console.log("mode:", mode);
   console.log("roleId:", roleId);
   const router = useRouter();
-  const { data: roleData, isLoading: roleLoading } = useRole(
+  const {
+    data: roleData,
+    isLoading: roleLoading
+  } = useRole(
     mode === "update" ? roleId : undefined
   );
-  console.log(roleData);
+  // console.log(roleData);
   const { data: menuData, isLoading: menuLoading } = useMenuTree();
   const { data: permissionData, isLoading: permissionLoading } = usePermissions();
+  
   const menus = menuData?.data ?? [];
-  const [activeTab, setActiveTab] = useState("");
+  // const permissions = permissionData?.data ?? [];
+  const permissions = (permissionData?.data ?? []).filter(
+    (permission) => permission.is_active
+  );
 
+  const menuPermissionModule: Record<string, string> = {
+    "user-list": "user",
+    "role-list": "role",
+    "org-unit-list": "org-unit",
+    "outlet-list": "outlet",
+    "report-summary": "report",
+    "report-audit": "audit",
+    "api-keys": "api-key",
+    settings: "setting",
+  };
+
+  const getMenuPermissions = (menu: MenuTree) => {
+    const module = menuPermissionModule[menu.code];
+
+    if (!module) {
+      return [];
+    }
+
+    return permissions.filter(
+      (permission) => permission.module === module
+    );
+  };
+
+  const getPermission = (
+    menu: MenuTree,
+    action: string
+  ) => {
+    const menuPermissions = getMenuPermissions(menu);
+
+    return menuPermissions.find(
+      (permission) => permission.action === action
+    );
+  };
+
+  const togglePermission = (permissionId: number) => {
+    setSelectedPermissions((current) => {
+      if (current.includes(permissionId)) {
+        return current.filter((id) => id !== permissionId);
+      }
+
+      return [...current, permissionId];
+    });
+  };
+
+  const toggleAllAccess = (menu: MenuTree) => {
+    const menuPermissions = getMenuPermissions(menu);
+
+    const permissionIds = menuPermissions.map(
+      (permission) => permission.id
+    );
+
+    const allSelected = permissionIds.every((id) =>
+      selectedPermissions.includes(id)
+    );
+
+    setSelectedPermissions((current) => {
+      if (allSelected) {
+        return current.filter(
+          (id) => !permissionIds.includes(id)
+        );
+      }
+
+      return Array.from(
+        new Set([...current, ...permissionIds])
+      );
+    });
+  };
+
+  const isAllAccessSelected = (menu: MenuTree) => {
+    const menuPermissions = getMenuPermissions(menu);
+
+    if (menuPermissions.length === 0) {
+      return false;
+    }
+
+    return menuPermissions.every((permission) =>
+      selectedPermissions.includes(permission.id)
+    );
+  };
+
+  // console.log("MENUS:", menus);
+  // console.log("PERMISSIONS:", permissions);
+  // console.log("ROLE PERMISSIONS:", roleData?.data?.permissions);
+
+  const [activeTab, setActiveTab] = useState("");
   const [roleName, setRoleName] = useState("");
   const [description, setDescription] = useState("");
+  const [selectedPermissions, setSelectedPermissions] = useState<number[]>([]);
+
+  // const permissionActions = {
+  //   view: "view",
+  //   create: "create",
+  //   update: "update",
+  //   delete: "delete",
+  // };
 
   useEffect(() => {
     if (mode === "update" && roleData?.data) {
       setRoleName(roleData.data.name);
       setDescription(roleData.data.description ?? "");
+
+      setSelectedPermissions(
+        roleData.data.permissions.map((permission) => permission.id)
+      );
     }
   }, [mode, roleData]);
+
+  const isPermissionSelected = (permissionId: number) => {
+    return selectedPermissions.includes(permissionId);
+  };
+
+  // useEffect(() => {
+  //   if (mode === "update" && roleData?.data) {
+  //     setRoleName(roleData.data.name);
+  //     setDescription(roleData.data.description ?? "");
+  //   }
+  // }, [mode, roleData]);
 
   useEffect(() => {
     if (!activeTab && menus.length > 0) {
@@ -56,53 +171,145 @@ export default function RoleForm({
     return menus.flatMap((menu) => {
       const rows: React.ReactNode[] = [];
 
-      // hanya render kalau bukan group
       if (menu.menu_type !== "group") {
+        const viewPermission = getPermission(menu, "viewAny");
+        const createPermission = getPermission(menu, "create");
+        const updatePermission = getPermission(menu, "update");
+        const deletePermission = getPermission(menu, "delete");
+        const exportPermission = getPermission(menu, "export");
+
         rows.push(
-          <tr key={menu.id} className="border-b h-14">
+          <tr
+            key={menu.id}
+            className="border-b h-14"
+          >
             <td className="px-6">
               <div
                 className="flex items-center"
-                style={{ paddingLeft: `${level * 24}px` }}
+                style={{
+                  paddingLeft: `${level * 24}px`,
+                }}
               >
                 {menu.label}
               </div>
             </td>
 
+            {/* ALL ACCESS */}
             <td className="text-center">
               <div className="flex items-center justify-center">
-                <Checkbox />
+                <Checkbox
+                  checked={isAllAccessSelected(menu)}
+                  onCheckedChange={() =>
+                    toggleAllAccess(menu)
+                  }
+                />
               </div>
             </td>
 
+            {/* VIEW */}
             <td className="text-center">
               <div className="flex items-center justify-center">
-                <Checkbox />
+                <Checkbox
+                  checked={
+                    viewPermission
+                      ? selectedPermissions.includes(viewPermission.id)
+                      : false
+                  }
+                  disabled={!viewPermission}
+                  onCheckedChange={() => {
+                    if (viewPermission) {
+                      togglePermission(viewPermission.id);
+                    }
+                  }}
+                />
               </div>
             </td>
 
+            {/* CREATE */}
             <td className="text-center">
               <div className="flex items-center justify-center">
-                <Checkbox />
+                <Checkbox
+                  checked={
+                    createPermission
+                      ? selectedPermissions.includes(createPermission.id)
+                      : false
+                  }
+                  disabled={!createPermission}
+                  onCheckedChange={() => {
+                    if (createPermission) {
+                      togglePermission(createPermission.id);
+                    }
+                  }}
+                />
               </div>
             </td>
 
+            {/* UPDATE */}
             <td className="text-center">
               <div className="flex items-center justify-center">
-                <Checkbox />
+                <Checkbox
+                  checked={
+                    updatePermission
+                      ? selectedPermissions.includes(updatePermission.id)
+                      : false
+                  }
+                  disabled={!updatePermission}
+                  onCheckedChange={() => {
+                    if (updatePermission) {
+                      togglePermission(updatePermission.id);
+                    }
+                  }}
+                />
               </div>
             </td>
 
+            {/* DELETE */}
             <td className="text-center">
               <div className="flex items-center justify-center">
-                <Checkbox />
+                <Checkbox
+                  checked={
+                    deletePermission
+                      ? selectedPermissions.includes(deletePermission.id)
+                      : false
+                  }
+                  disabled={!deletePermission}
+                  onCheckedChange={() => {
+                    if (deletePermission) {
+                      togglePermission(deletePermission.id);
+                    }
+                  }}
+                />
+              </div>
+            </td>
+
+            {/* EXPORT */}
+            <td className="text-center">
+              <div className="flex items-center justify-center">
+                <Checkbox
+                  checked={
+                    exportPermission
+                      ? selectedPermissions.includes(exportPermission.id)
+                      : false
+                  }
+                  disabled={!exportPermission}
+                  onCheckedChange={() => {
+                    if (exportPermission) {
+                      togglePermission(exportPermission.id);
+                    }
+                  }}
+                />
               </div>
             </td>
           </tr>
         );
       }
 
-      rows.push(...renderRows(menu.children ?? [], level + 1));
+      rows.push(
+        ...renderRows(
+          menu.children ?? [],
+          level + 1
+        )
+      );
 
       return rows;
     });
@@ -191,6 +398,7 @@ export default function RoleForm({
                       <th className="text-center">Create</th>
                       <th className="text-center">Update</th>
                       <th className="text-center">Delete</th>
+                      <th className="text-center">Export</th>
                     </tr>
                   </thead>
 

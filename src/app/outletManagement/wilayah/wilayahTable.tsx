@@ -4,15 +4,22 @@
 import { DataTables, DataTablesSearch, DataTablesColumnToggle } from "@/components/tables/index";
 import { useDataTable } from "@/hooks/useDataTable";
 import { columns } from "./columns";
-import { kantorWilayah } from "./data";
+import type { OrganizationUnit } from "@/types/organizationUnit";
+// import { kantorWilayah } from "./data";
 
-export default function WilayahTable() {
+interface WilayahTableProps {
+  data: OrganizationUnit[];
+}
+
+export default function WilayahTable({
+  data,
+}: WilayahTableProps) {
   const {
     table,
     globalFilter,
     setGlobalFilter,
   } = useDataTable({
-    data: kantorWilayah,
+    data,
     columns,
   });
 

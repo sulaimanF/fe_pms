@@ -5,12 +5,15 @@ export const useOutlets = (
   organizationUnitId?: number
 ) => {
   return useQuery({
-    queryKey: [
-      "outlets",
-      organizationUnitId,
-    ],
-    queryFn: () =>
-      getOutlets(organizationUnitId),
+    queryKey: ["outlets", organizationUnitId],
+    queryFn: () => getOutlets(organizationUnitId),
     enabled: !!organizationUnitId,
+  });
+};
+
+export const useAllOutlets = () => {
+  return useQuery({
+    queryKey: ["outlets"],
+    queryFn: () => getOutlets(),
   });
 };

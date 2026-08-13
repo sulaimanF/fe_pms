@@ -20,14 +20,17 @@ export interface MenuTree {
   icon: string | null;
   route_name: string | null;
   route_path: string | null;
-  menu_type: "group" | "item";
+  menu_type: "item" | "group";
   sort_order: number;
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
   children: MenuTree[];
 }
 
 export interface MenuTreeResponse {
   success: boolean;
+  http_code: number;
   message: string;
   data: MenuTree[];
 }

@@ -34,6 +34,8 @@ export interface OrganizationUnit {
   updated_by: number | null;
   deleted_at: string | null;
   parent: OrganizationParent | null;
+  jumlah_kc?: number;
+  jumlah_kcp?: number;
 }
 
 export interface OrganizationPagination {

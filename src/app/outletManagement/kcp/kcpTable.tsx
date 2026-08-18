@@ -14,8 +14,6 @@ export default function KcpTable({
 }: KcpTableProps) {
   const {
     table,
-    globalFilter,
-    setGlobalFilter,
   } = useDataTable({
     data,
     columns,

@@ -34,8 +34,8 @@ export const columns: ColumnDef<OrganizationUnit>[] = [
     },
   },
   {
-    accessorKey: "region_code",
-    header: "Kode Wilayah",
+    accessorKey: "jumlah_kcp",
+    header: "Jumlah KCP",
     size: 250,
   },
   {

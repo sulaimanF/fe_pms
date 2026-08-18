@@ -35,14 +35,14 @@ export const columns: ColumnDef<OrganizationUnit>[] = [
     header: "Kota",
     size: 250,
   },
-  {
-    accessorKey: "code",
-    header: "Kode",
+    {
+    accessorKey: "jumlah_kc",
+    header: "Jumlah KC",
     size: 250,
   },
   {
-    accessorKey: "region_code",
-    header: "Kode Wilayah",
+    accessorKey: "jumlah_kcp",
+    header: "Jumlah KCP",
     size: 250,
   },
   {

@@ -4,14 +4,14 @@ import { WilayahTable } from "./wilayah";
 import { KcpTable } from "./kcp";
 import { KcTable } from "./kc";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 import { useOrganizationUnits } from "@/hooks/useOrganizationUnits";
 import { useAllOutlets } from "@/hooks/useOutlets";
-import { Link } from "lucide-react";
+import OutletManagementSkeleton from "@/components/skeletons/TableSkeleton";
+import { Plus } from "lucide-react";
+import Link from "next/link";
 
 export default function OutletManagementPage() {
 
-  const router = useRouter();
   const {
     data: outletData,
     isLoading: outletLoading,
@@ -28,7 +28,7 @@ export default function OutletManagementPage() {
   console.log("ORGANIZATIONS:", organizationData);
 
   if (outletLoading || organizationLoading) {
-    return <div>Loading...</div>;
+    return <OutletManagementSkeleton />;
   }
 
   if (outletError || organizationError) {
@@ -69,10 +69,13 @@ export default function OutletManagementPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Outlet Management</h1>
         <Button
-          onClick={() => router.push("/outletManagement/create")}
+          asChild
           className="bg-blue-600 hover:bg-blue-700"
         >
-          Add New Data
+          <Link href="/outletManagement/create">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Outlet
+          </Link>
         </Button>
       </div>
       <WilayahTable data={wilayah} />

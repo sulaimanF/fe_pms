@@ -24,8 +24,6 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
 import { useAppSelector } from "@/store/hooks";
 import { useDispatch } from "react-redux";
-import { logout as logoutAction } from "@/store/slices/authSlice";
-import { useLogout } from "@/hooks/useAuth";
 import { useState } from "react";
 import ConfirmDialogsLogout from "@/components/dialogs/ConfirmDiloagsLogout";
 import { logout } from "@/store/slices/authSlice";
@@ -84,23 +82,6 @@ export default function AppSidebar() {
   const [openLogoutDialog, setOpenLogoutDialog] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  // const confirmLogout = async () => {
-  //   setLogoutLoading(true);
-  //   try {
-  //     await api.post("/auth/logout");
-
-  //     dispatch(logout());
-
-  //     localStorage.removeItem("token");
-  //     localStorage.removeItem("token_type");
-
-  //     router.replace("/login");
-  //   } catch (err) {
-  //     console.error(err);
-  //   } finally {
-  //     setLogoutLoading(false);
-  //   }
-  // };
 
   const confirmLogout = async () => {
     setOpenLogoutDialog(false);

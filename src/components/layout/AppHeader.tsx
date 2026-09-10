@@ -1,9 +1,9 @@
 "use client";
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Bell, LogOut, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Bell, User } from "lucide-react";
 import { useAppSelector } from "@/store/hooks";
+import LogoutButton from "@/components/ui/logoutButton";
 
 export default function AppHeader() {
 
@@ -28,13 +28,7 @@ export default function AppHeader() {
           </span>
         </div>
 
-        <Button
-          size="sm"
-          className="bg-red-600 hover:bg-red-700 gap-4"
-        >
-          Logout
-          <LogOut className="ml-2 h-4 w-4"/>
-        </Button>
+        <LogoutButton variant="button" />
 
       </div>
     </header>

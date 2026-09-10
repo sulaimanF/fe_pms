@@ -32,7 +32,7 @@ export default function DashboardPage() {
 
         <p>Username: {user?.username}</p>
 
-        <p>Role: {user?.role}</p>
+        <p>Role: {user?.roles?.[0]?.name ?? "-"}</p>
       </div>
     </div>
   );

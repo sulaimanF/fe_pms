@@ -7,6 +7,7 @@ interface AuthState {
   expires_in: number | null;
   expired_at: number | null;
   sent_to: string | null;
+  otpVerifyType: "login" | "otp";
   token: string | null;
   token_type: string | null;
   user: AuthUser | null;
@@ -19,6 +20,7 @@ const initialState: AuthState = {
   expires_in: null,
   expired_at: null,
   sent_to: null,
+  otpVerifyType: "login",
   token: null,
   token_type: null,
   user: null,
@@ -40,6 +42,36 @@ const authSlice = createSlice({
       state.login = action.payload.login;
       // waktu OTP berakhir
       state.expired_at = Date.now() + action.payload.expires_in * 1000;
+      state.otpVerifyType = "login";
+    },
+
+    setResendOtpData: (
+      state,
+      action: PayloadAction<{
+        expires_in: number;
+        sent_to: string;
+      }>
+    ) => {
+      state.expires_in = action.payload.expires_in;
+      state.sent_to = action.payload.sent_to;
+
+      // PENTING:
+      // state.reference tidak diubah
+      // state.login tidak diubah
+
+      state.expired_at =
+        Date.now() + action.payload.expires_in * 1000;
+
+      // OTP hasil resend diverifikasi melalui
+      // /auth/otp/verify
+      state.otpVerifyType = "otp";
+    },
+
+    setOtpVerifyType: (
+      state,
+      action: PayloadAction<"login" | "otp">
+    ) => {
+      state.otpVerifyType = action.payload;
     },
 
     // Simpan token setelah OTP berhasil
@@ -57,6 +89,7 @@ const authSlice = createSlice({
       state.expires_in = null;
       state.sent_to = null;
       state.expired_at = null;
+      state.otpVerifyType = "login";
     },
 
     // setToken(
@@ -95,12 +128,15 @@ const authSlice = createSlice({
       state.token_type = null;
       state.user = null;
       state.isAuthenticated = false;
+      state.otpVerifyType = "login";
     },
   },
 });
 
 export const {
   setOtpData,
+  setResendOtpData,
+  setOtpVerifyType,
   setAuthData,
   logout,
 } = authSlice.actions;

@@ -15,11 +15,11 @@ export default function DashboardPage() {
     (state: RootState) => state.auth.isAuthenticated
   );
 
-  // useEffect(() => {
-  //   if (!isAuthenticated) {
-  //     router.push("/auth/login");
-  //   }
-  // }, [isAuthenticated, router]);
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, router]);
 
   return (
     <div className="p-6">
@@ -30,7 +30,8 @@ export default function DashboardPage() {
       <div className="mt-4 rounded-lg border p-4">
         <p>Login berhasil 🎉</p>
 
-        <p>Username: {user?.username}</p>
+        {/* <p>Username: {user?.username}</p> */}
+        <p>Username: {user?.username ?? "-"}</p>
 
         <p>Role: {user?.roles?.[0]?.name ?? "-"}</p>
       </div>

@@ -57,7 +57,12 @@ export default function Login() {
       const loginData = response.data.data;
 
       if (loginData.pending) {
-        dispatch(setOtpData({ ...loginData, login: payload.login }));
+        dispatch(
+          setOtpData({
+            ...loginData,
+            login: payload.login,
+          })
+        );
 
         toast.success(response.data.message);
 

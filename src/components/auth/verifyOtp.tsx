@@ -11,7 +11,7 @@ import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
-import { setOtpData, setAuthData } from "@/store/slices/authSlice";
+import { setOtpData, setAuthData, setResendOtpData } from "@/store/slices/authSlice";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { otpSchema, OtpFormData } from "@/validations/otpSchema";
 import { RootState } from "@/store/store";
@@ -28,6 +28,8 @@ export default function OtpForm() {
     reference,
     sent_to,
     expired_at,
+    otpVerifyType,
+    isAuthenticated,
   } = useSelector((state: RootState) => state.auth);
 
   const [loading, setLoading] = useState(false);
@@ -37,11 +39,11 @@ export default function OtpForm() {
   const seconds = timeLeft % 60;
   const isExpired = timeLeft === 0;
 
-  // useEffect(() => {
-  //   if (!reference) {
-  //     router.replace("/login");
-  //   }
-  // }, [reference, router]);
+  useEffect(() => {
+    if (!reference && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [reference, isAuthenticated, router]);
 
   const {
     control,
@@ -86,13 +88,25 @@ export default function OtpForm() {
     setLoading(true);
 
     try {
-      const payload: VerifyOtpRequest = {
-        reference: reference!,
-        otp: data.otp,
-      };
+      const verifyEndpoint =
+        otpVerifyType === "login"
+          ? "/auth/login/verify-otp"
+          : "/auth/otp/verify";
+
+      const payload =
+        otpVerifyType === "login"
+          ? {
+              reference: reference!,
+              otp: data.otp,
+            }
+          : {
+              reference: reference!,
+              otp: data.otp,
+              login: login!,
+            };
 
       const response = await api.post<ApiResponse<AuthResponse>>(
-        "/auth/login/verify-otp",
+        verifyEndpoint,
         payload
       );
 
@@ -115,6 +129,7 @@ export default function OtpForm() {
       toast.success(response.data.message);
 
       router.replace("/dashboard");
+
     } catch (error) {
       if (axios.isAxiosError(error)) {
         toast.error(
@@ -144,18 +159,21 @@ export default function OtpForm() {
       const response = await api.post<ApiResponse<LoginResponse>>(
         "/auth/otp/resend",
         {
-          login
+          login,
         }
       );
 
       dispatch(
-        setOtpData({
-          ...response.data.data,
-          login,
+        setResendOtpData({
+          expires_in: response.data.data.expires_in,
+          sent_to: response.data.data.sent_to,
         })
       );
+
       reset({ otp: "" });
+
       toast.success(response.data.message);
+      
     } catch (error) {
       if (axios.isAxiosError(error)) {
         toast.error(

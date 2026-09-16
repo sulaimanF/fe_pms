@@ -19,11 +19,18 @@ export interface Role {
   permissions: RolePermission[];
 }
 
-export interface RoleResponse {
+export interface RoleListResponse {
+  success: boolean;
+  message: string;
+  data: Role[];
+}
+
+export interface RoleDetailResponse {
   success: boolean;
   message: string;
   data: Role;
 }
+
 // export type RoleResponse = ApiResponse<Role[]>;
 // export interface RoleResponse {
 //   success: boolean;

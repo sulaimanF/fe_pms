@@ -40,39 +40,57 @@ type NavSection = {
     items: NavLink[];
 };
 
-const navItems: NavSection[] = [
-  {
-    title: "",
-    items: [
-      { icon: LayoutGrid, name: "Home", path: "/dashboard" },
-      { icon: Bell, name: "Notification", path: "/notification" },
-      { icon: Shield, name: "Audit Trail", path: "/auditTrail" },
-      { icon: Landmark, name: "Outlet", path: "/outlet" },
-    ],
-  },
-  {
-    title: "Kuesioner",
-    items: [
-      { icon: FileEdit, name: "Kuesioner", path: "/kuesioner" },
-      { icon: Clipboard, name: "Response", path: "/response" },
-      { icon: ClipboardCheck, name: "Review Kuesioner", path: "/review" },
-    ],
-  },
-  {
-    title: "Master Data",
-    items: [
-      { icon: User, name: "User Management", path: "/userManagement" },
-      { icon: Contact, name: "Role Management", path: "/roleManagement" },
-      { icon: Building2, name: "Outlet Management", path: "/outletManagement" },
-      { icon: Award, name: "Parameter Penilaian", path: "/parameterPenilaian" },
-    ],
-  },
-];
+// const navItems: NavSection[] = [
+//   {
+//     title: "",
+//     items: [
+//       { icon: LayoutGrid, name: "Home", path: "/dashboard" },
+//       { icon: Bell, name: "Notification", path: "/notification" },
+//       { icon: Shield, name: "Audit Trail", path: "/auditTrail" },
+//       { icon: Landmark, name: "Outlet", path: "/outlet" },
+//     ],
+//   },
+//   {
+//     title: "Kuesioner",
+//     items: [
+//       { icon: FileEdit, name: "Kuesioner", path: "/kuesioner" },
+//       { icon: Clipboard, name: "Response", path: "/response" },
+//       { icon: ClipboardCheck, name: "Review Kuesioner", path: "/review" },
+//     ],
+//   },
+//   {
+//     title: "Master Data",
+//     items: [
+//       { icon: User, name: "User Management", path: "/userManagement" },
+//       { icon: Contact, name: "Role Management", path: "/roleManagement" },
+//       { icon: Building2, name: "Outlet Management", path: "/outletManagement" },
+//       { icon: Award, name: "Parameter Penilaian", path: "/parameterPenilaian" },
+//     ],
+//   },
+// ];
 
 export default function AppSidebar() {
   const user = useAppSelector(
     (state) => state.auth.user
   );
+
+  const menu = useAppSelector(
+    (state) => state.auth.menu
+  );
+
+  const iconMap = {
+    Bell,
+    ClipboardCheck,
+    Shield,
+    Building2,
+    Landmark,
+    LayoutGrid,
+    FileEdit,
+    Clipboard,
+    User,
+    Contact,
+    Award,
+  };
   
   const pathname = usePathname();
   const router = useRouter();
@@ -143,20 +161,23 @@ export default function AppSidebar() {
         </div>
       </SidebarHeader>
 
-    {/* Content */}
-    <SidebarContent>
-      {navItems.map((section, index) => (
+        {/* Content */}
+        <SidebarContent>
+        {menu.map((section, index) => (
           <SidebarGroup
-            key={section.title}
+            key={`${section.title}-${index}`}
             className={collapsed ? "px-2 py-1" : "px-3 py-1"}
           >
             {index > 0 && (
-              <Separator className={
-                collapsed
-                  ? "mx-2 my-2 bg-white/50"
-                  : "my-2 bg-white/50"
-              }/>
+              <Separator
+                className={
+                  collapsed
+                    ? "mx-2 my-2 bg-white/50"
+                    : "my-2 bg-white/50"
+                }
+              />
             )}
+
             {section.title && (
               <SidebarGroupLabel
                 className="uppercase text-sidebar-foreground/70"
@@ -164,18 +185,27 @@ export default function AppSidebar() {
                 {section.title}
               </SidebarGroupLabel>
             )}
+
             <SidebarGroupContent>
-              <SidebarMenu className={collapsed ? "space-y-1" : "space-y-2"}>
+              <SidebarMenu
+                className={collapsed ? "space-y-1" : "space-y-2"}
+              >
                 {section.items.map((item) => {
-                  const Icon = item.icon;
+                  const Icon =
+                    iconMap[item.icon as keyof typeof iconMap];
+
+                  if (!Icon) {
+                    return null;
+                  }
+
                   return (
-                    <SidebarMenuItem
-                      key={item.path}
-                    >
+                    <SidebarMenuItem key={item.path}>
                       <SidebarMenuButton
                         asChild
                         isActive={pathname === item.path}
-                        tooltip={collapsed ? item.name : undefined}
+                        tooltip={
+                          collapsed ? item.name : undefined
+                        }
                         className={`
                           text-[15px]
                           font-medium
@@ -197,13 +227,17 @@ export default function AppSidebar() {
                             ${collapsed ? "justify-center" : ""}
                           `}
                         >
-                          <Icon/>
-                          <span className={collapsed ? "hidden" : ""}>
-                              {item.name}
+                          <Icon />
+
+                          <span
+                            className={
+                              collapsed ? "hidden" : ""
+                            }
+                          >
+                            {item.name}
                           </span>
                         </Link>
                       </SidebarMenuButton>
-                      
                     </SidebarMenuItem>
                   );
                 })}

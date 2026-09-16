@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { AuthResponse, AuthUser, LoginOtpData } from "@/types/auth";
+import type { AuthResponse, AuthUser, LoginOtpData, AuthMenuGroup, AuthRole } from "@/types/auth";
 
 interface AuthState {
   login: string | null;
@@ -11,6 +11,9 @@ interface AuthState {
   token: string | null;
   token_type: string | null;
   user: AuthUser | null;
+  roles: AuthRole[];
+  permissions: string[];
+  menu: AuthMenuGroup[];
   isAuthenticated: boolean;
 }
 
@@ -24,6 +27,9 @@ const initialState: AuthState = {
   token: null,
   token_type: null,
   user: null,
+  roles: [],
+  permissions: [],
+  menu: [],
   isAuthenticated: false,
 };
 
@@ -82,6 +88,9 @@ const authSlice = createSlice({
       state.token = action.payload.token;
       state.token_type = action.payload.token_type;
       state.user = action.payload.user;
+      state.roles = action.payload.roles;
+      state.permissions = action.payload.permissions;
+      state.menu = action.payload.menu;
       state.isAuthenticated = true;
 
       state.login = null;

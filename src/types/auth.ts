@@ -56,6 +56,9 @@ export interface AuthResponse {
   token: string;
   token_type: string;
   user: AuthUser;
+  roles: AuthRole[];
+  permissions: string[];
+  menu: AuthMenuGroup[];
 }
 
 export interface ResendOtpRequest {
@@ -64,4 +67,22 @@ export interface ResendOtpRequest {
 
 export interface LoginOtpData extends LoginResponse {
   login: string;
+}
+
+export interface AuthMenuItem {
+  icon: string;
+  name: string;
+  path: string;
+}
+
+export interface AuthMenuGroup {
+  title: string;
+  items: AuthMenuItem[];
+}
+
+export interface MeResponse {
+  user: AuthUser;
+  roles: AuthRole[];
+  permissions: string[];
+  menu: AuthMenuGroup[];
 }

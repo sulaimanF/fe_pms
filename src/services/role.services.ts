@@ -1,12 +1,12 @@
 import axios from "@/lib/axios";
-import { RoleResponse } from "@/types/role";
+import {   RoleListResponse, RoleDetailResponse } from "@/types/role";
 
 export const getRoles = async () => {
-  const response = await axios.get<RoleResponse>("/roles");
+  const response = await axios.get<RoleListResponse>("/roles");
   return response.data;
 };
 
-export const getRoleById = async (id: number | string): Promise<RoleResponse> => {
+export const getRoleById = async (id: number | string): Promise<RoleDetailResponse> => {
   const response = await axios.get(`/roles/${id}`);
   return response.data;
 }

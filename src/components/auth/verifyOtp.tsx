@@ -122,7 +122,10 @@ export default function OtpForm() {
         setAuthData({
           token: authData.token,
           token_type: authData.token_type,
-          user: me.data,
+          user: me.data.user,
+          roles: me.data.roles,
+          permissions: me.data.permissions,
+          menu: me.data.menu,
         })
       );
 

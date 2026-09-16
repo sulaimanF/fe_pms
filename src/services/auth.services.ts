@@ -1,9 +1,9 @@
 import api from "@/lib/axios";
 import type { ApiResponse } from "@/types/common";
-import type { AuthUser } from "@/types/auth";
+import type { MeResponse } from "@/types/auth";
 
 export const getMe = async () => {
-  const response = await api.get<ApiResponse<AuthUser>>("/auth/me");
+  const response = await api.get<ApiResponse<MeResponse>>("/auth/me");
   return response.data;
 }
 

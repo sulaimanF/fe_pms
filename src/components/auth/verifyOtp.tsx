@@ -3,25 +3,31 @@
 import Image from "next/image";
 import axios from "axios";
 import api from "@/lib/axios";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { useDispatch, useSelector  } from "react-redux";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { captureSession, isCurrentSession } from "@/lib/session";
+import { acceptSessionCredentials } from "@/lib/sessionLifecycle";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
-import { setOtpData, setAuthData, setResendOtpData } from "@/store/slices/authSlice";
+import { setAuthData, setResendOtpData } from "@/store/slices/authSlice";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { otpSchema, OtpFormData } from "@/validations/otpSchema";
-import { RootState } from "@/store/store";
-import type { VerifyOtpRequest, AuthResponse, LoginResponse } from "@/types/auth";
+import type { AuthResponse, LoginResponse } from "@/types/auth";
 import type { ApiResponse } from "@/types/common";
 import { getMe } from "@/services/auth.services";
 
 export default function OtpForm() {
   const router = useRouter();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   const {
     login,
@@ -30,7 +36,7 @@ export default function OtpForm() {
     expired_at,
     otpVerifyType,
     isAuthenticated,
-  } = useSelector((state: RootState) => state.auth);
+  } = useAppSelector((state) => state.auth);
 
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -78,6 +84,8 @@ export default function OtpForm() {
   }, [expired_at]);
 
   const handleVerifyOtp = async (data: OtpFormData) => {
+    let context = captureSession();
+    if (!isCurrentSession(context)) return;
     if (loading || isExpired) {
       toast.error("Kode OTP telah kadaluarsa.");
       return;
@@ -107,16 +115,19 @@ export default function OtpForm() {
 
       const response = await api.post<ApiResponse<AuthResponse>>(
         verifyEndpoint,
-        payload
+        payload,
+        { sessionContext: context }
       );
 
+      if (!mounted.current || !isCurrentSession(context)) return;
       const authData = response.data.data;
-
-      // dispatch(setAuthData(authData));
-      localStorage.setItem("token", authData.token);
-      localStorage.setItem("token_type", authData.token_type);
+      const nextSession = await acceptSessionCredentials(context, authData.token, authData.token_type);
+      if (!nextSession) return;
+      context = nextSession;
+      if (!mounted.current || !isCurrentSession(context)) return;
 
       const me = await getMe();
+      if (!mounted.current || !isCurrentSession(context)) return;
 
       dispatch(
         setAuthData({
@@ -134,6 +145,7 @@ export default function OtpForm() {
       router.replace("/dashboard");
 
     } catch (error) {
+      if (!mounted.current || !isCurrentSession(context) || axios.isCancel(error)) return;
       if (axios.isAxiosError(error)) {
         toast.error(
           error.response?.data?.message ??
@@ -143,12 +155,14 @@ export default function OtpForm() {
         toast.error("Terjadi kesalahan.");
       }
     } finally {
-      setLoading(false);
+      if (mounted.current) setLoading(false);
     }
   };
 
   const handleResendOtp = async () => {
     if (resending) return;
+    const context = captureSession();
+    if (!isCurrentSession(context)) return;
 
     if (!login) {
       toast.error("Data login tidak ditemukan.");
@@ -163,8 +177,10 @@ export default function OtpForm() {
         "/auth/otp/resend",
         {
           login,
-        }
+        },
+        { sessionContext: context }
       );
+      if (!mounted.current || !isCurrentSession(context)) return;
 
       dispatch(
         setResendOtpData({
@@ -178,6 +194,7 @@ export default function OtpForm() {
       toast.success(response.data.message);
       
     } catch (error) {
+      if (!mounted.current || !isCurrentSession(context) || axios.isCancel(error)) return;
       if (axios.isAxiosError(error)) {
         toast.error(
           error.response?.data?.message ??
@@ -187,7 +204,7 @@ export default function OtpForm() {
         toast.error("Terjadi kesalahan.");
       }
     } finally {
-      setResending(false);
+      if (mounted.current) setResending(false);
     }
   };
 
@@ -206,7 +223,7 @@ export default function OtpForm() {
             />
           </div>
           <div>
-            <form onSubmit={handleSubmit(handleVerifyOtp)}>
+            <form onSubmit={(event) => { void handleSubmit(handleVerifyOtp)(event); }}>
               {/* Description */}
               <div className="mb-6 text-center">
                 <p className="text-[20px] leading-8 text-gray-500">

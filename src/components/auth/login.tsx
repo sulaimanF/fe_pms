@@ -3,8 +3,9 @@
 import Image from "next/image";
 import axios from "axios";
 import api from "@/lib/axios";
-import React, { useState } from "react";
-import { useDispatch } from "react-redux";
+import React, { useEffect, useRef, useState } from "react";
+import { useAppDispatch } from "@/store/hooks";
+import { captureSession, isCurrentSession } from "@/lib/session";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,16 @@ import type { ApiResponse } from "@/types/common";
 
 export default function Login() {
   const router = useRouter();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+  const mounted = useRef(true);
+  const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (redirectTimer.current) clearTimeout(redirectTimer.current);
+    };
+  }, []);
   // Form State
   const {
     register,
@@ -39,6 +49,8 @@ export default function Login() {
   const handleLogin = async (data: LoginFormData) => {
     // Cegah double click
     if (loading) return;
+    const context = captureSession();
+    if (!isCurrentSession(context)) return;
 
     setLoading(true);
 
@@ -51,9 +63,11 @@ export default function Login() {
       const response =
         await api.post<ApiResponse<LoginResponse>>(
           "/auth/login",
-          payload
+          payload,
+          { sessionContext: context }
         );
 
+      if (!mounted.current || !isCurrentSession(context)) return;
       const loginData = response.data.data;
 
       if (loginData.pending) {
@@ -66,12 +80,13 @@ export default function Login() {
 
         toast.success(response.data.message);
 
-        setTimeout(() => {
-          router.push("/otp");
+        if (redirectTimer.current) clearTimeout(redirectTimer.current);
+        redirectTimer.current = setTimeout(() => {
+          if (mounted.current && isCurrentSession(context)) router.push("/otp");
         }, 1000);
       }
     } catch (error: unknown) {
-      console.error(error);
+      if (!mounted.current || !isCurrentSession(context) || axios.isCancel(error)) return;
 
       if (axios.isAxiosError(error)) {
         if (error.response) {
@@ -85,7 +100,7 @@ export default function Login() {
         toast.error("Terjadi kesalahan yang tidak diketahui.");
       }
     } finally {
-      setLoading(false);
+      if (mounted.current) setLoading(false);
     }
   };
 
@@ -107,7 +122,7 @@ export default function Login() {
             </div>
             {/* Logo */}
             <div>
-              <form onSubmit={handleSubmit(handleLogin)}>
+              <form onSubmit={(event) => { void handleSubmit(handleLogin)(event); }}>
                 <div className="space-y-6">
                   {/* Username/userAD */}
                   <div className="space-y-2">

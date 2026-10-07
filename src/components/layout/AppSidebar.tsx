@@ -20,13 +20,10 @@ import {
 } from "@/components/ui/sidebar";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useRouter } from "next/navigation";
-import api from "@/lib/axios";
+import { useLogout } from "@/hooks/useAuth";
 import { useAppSelector } from "@/store/hooks";
-import { useDispatch } from "react-redux";
 import { useState } from "react";
 import ConfirmDialogsLogout from "@/components/dialogs/ConfirmDiloagsLogout";
-import { logout } from "@/store/slices/authSlice";
 import LoadingOverlay from "../ui/LoadingOverlay";
 
 type NavLink = {
@@ -93,32 +90,16 @@ export default function AppSidebar() {
   };
   
   const pathname = usePathname();
-  const router = useRouter();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const dispatch = useDispatch();
   const [openLogoutDialog, setOpenLogoutDialog] = useState(false);
-  const [logoutLoading, setLogoutLoading] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
+  const logoutMutation = useLogout();
+  const loggingOut = logoutMutation.isPending;
 
-  const confirmLogout = async () => {
+  const confirmLogout = () => {
+    if (loggingOut) return;
     setOpenLogoutDialog(false);
-    setLoggingOut(true);
-
-    try {
-      await api.post("/auth/logout");
-
-      dispatch(logout());
-
-      localStorage.removeItem("token");
-      localStorage.removeItem("token_type");
-
-      router.replace("/login");
-    } catch (err) {
-      console.error(err);
-
-      setLoggingOut(false);
-    }
+    logoutMutation.mutate();
   };
 
   return (
@@ -250,6 +231,7 @@ export default function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
+              disabled={loggingOut}
               onClick={() => setOpenLogoutDialog(true)}
               tooltip={collapsed ? "Logout" : undefined}
               className={`
@@ -278,7 +260,7 @@ export default function AppSidebar() {
         title="Logout"
         description="Are you sure you want to logout from this account?"
         onConfirm={confirmLogout}
-        loading={logoutLoading}
+        loading={loggingOut}
       />
 
       <LoadingOverlay

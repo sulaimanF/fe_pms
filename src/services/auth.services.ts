@@ -7,7 +7,11 @@ export const getMe = async () => {
   return response.data;
 }
 
-export const logout = async () => {
-  const response = await api.post("/auth/logout");
+export const logout = async (token: string) => {
+  const response = await api.post("/auth/logout", undefined, {
+    sessionMode: "revoke",
+    headers: { Authorization: `Bearer ${token}` },
+    timeout: 10_000,
+  });
   return response.data;
 };

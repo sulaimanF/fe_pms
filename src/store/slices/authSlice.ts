@@ -126,18 +126,16 @@ const authSlice = createSlice({
     // },
 
     // Logout
-    logout: (state) => {
-      state.login = null;
-      state.reference = null;
-      state.expires_in = null;
-      state.expired_at = null;
-      state.sent_to = null;
-
+    logout: () => initialState,
+    // Preserve the OTP challenge while clearing the previous account.
+    prepareSession: (state) => {
       state.token = null;
       state.token_type = null;
       state.user = null;
+      state.roles = [];
+      state.permissions = [];
+      state.menu = [];
       state.isAuthenticated = false;
-      state.otpVerifyType = "login";
     },
   },
 });
@@ -148,6 +146,7 @@ export const {
   setOtpVerifyType,
   setAuthData,
   logout,
+  prepareSession,
 } = authSlice.actions;
 
 export default authSlice.reducer;

@@ -1,46 +1,35 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useEffect, useState } from "react";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useRouter } from "next/navigation";
-import { useRole } from "@/hooks/useRoles";
 
-interface RoleFormProps {
-  mode: "create" | "update";
-  roleId?: number;
+interface PermissionRoleProps {
+  selectedPermissions: number[];
+  onChange: (permissions: number[]) => void;
 }
 
-export default function RoleForm({
-  mode,
-  roleId,
-}: RoleFormProps) {
-  // console.log("mode:", mode);
-  // console.log("roleId:", roleId);
-  const router = useRouter();
+export default function PermissionRole({
+  selectedPermissions,
+  onChange,
+}: PermissionRoleProps) {
+
   const {
-    data: roleData,
-    isLoading: roleLoading
-  } = useRole(
-    mode === "update" ? roleId : undefined
-  );
-  // console.log(roleData);
-  const {
-    data: permissionData, isLoading: permissionLoading
+    data: permissionData,
+    isLoading: permissionLoading,
   } = usePermissions();
-  
+
   const permissions = (permissionData?.data ?? []).filter(
     (permission) => permission.is_active
   );
 
   const [activeTab, setActiveTab] = useState("");
-  const [roleName, setRoleName] = useState("");
-  const [description, setDescription] = useState("");
-  const [selectedPermissions, setSelectedPermissions] = useState<number[]>([]);
 
   const permissionModules = [
     { key: "user", label: "User" },
@@ -63,17 +52,18 @@ export default function RoleForm({
   };
 
   const togglePermission = (permissionId: number) => {
-    const id = Number(permissionId);
-
-    setSelectedPermissions((current) => {
-      if (current.includes(id)) {
-        return current.filter(
-          (currentId) => currentId !== id
-        );
-      }
-
-      return [...current, id];
-    });
+    if (selectedPermissions.includes(permissionId)) {
+      onChange(
+        selectedPermissions.filter(
+          (id) => id !== permissionId
+        )
+      );
+    } else {
+      onChange([
+        ...selectedPermissions,
+        permissionId,
+      ]);
+    }
   };
 
   const toggleAllAccess = (module: string) => {
@@ -83,58 +73,63 @@ export default function RoleForm({
       (permission) => Number(permission.id)
     );
 
-    const allSelected = permissionIds.length > 0 && permissionIds.every((id) => selectedPermissions.includes(id));
-
-    setSelectedPermissions((current) => {
-      if (allSelected) {
-        return current.filter((id) => !permissionIds.includes(id));
-      }
-
-      return Array.from(
-        new Set([...current, ...permissionIds])
+    const allSelected =
+      permissionIds.length > 0 &&
+      permissionIds.every((id) =>
+        selectedPermissions.includes(id)
       );
-    });
+
+    if (allSelected) {
+      onChange(
+        selectedPermissions.filter(
+          (id) => !permissionIds.includes(id)
+        )
+      );
+    } else {
+      onChange(
+        Array.from(
+          new Set([
+            ...selectedPermissions,
+            ...permissionIds,
+          ])
+        )
+      );
+    }
   };
 
   const isAllAccessSelected = (module: string) => {
-    const modulePermissions = getModulePermissions(module);
+    const modulePermissions =
+      getModulePermissions(module);
 
     if (modulePermissions.length === 0) {
       return false;
     }
 
     return modulePermissions.every((permission) =>
-      selectedPermissions.includes(Number(permission.id))
+      selectedPermissions.includes(
+        Number(permission.id)
+      )
     );
   };
 
-  const isPermissionSelected = (permissionId: number) => {
+  const isPermissionSelected = (
+    permissionId: number
+  ) => {
     return selectedPermissions.includes(permissionId);
   };
 
-  // console.log("MENUS:", menus);
-  // console.log("PERMISSIONS:", permissions);
-  // console.log("ROLE PERMISSIONS:", roleData?.data?.permissions);
-
   useEffect(() => {
-    if (mode === "update" && roleData?.data) {
-      setRoleName(roleData.data.name ?? "");
-      setDescription(roleData.data.description ?? "");
-
-      setSelectedPermissions(
-        (roleData.data.permissions ?? []).map(
-          (permission) => Number(permission.id)
-        )
+    if (
+      !activeTab &&
+      permissionModules.length > 0
+    ) {
+      setActiveTab(
+        permissionModules[0].key
       );
-    }
-  }, [mode, roleData]);
-
-  useEffect(() => {
-    if (!activeTab && permissionModules.length > 0) {
-      setActiveTab(permissionModules[0].key);
     }
   }, [activeTab]);
 
+  // renderPermissionRows dipindahkan ke sini
   const renderPermissionRows = (
     module: string
   ): React.ReactNode[] => {
@@ -385,143 +380,99 @@ export default function RoleForm({
   };
 
   return (
-    <div className="space-y-6">
-      <Card className="rounded-3xl shadow-lg">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <Input
-              className="h-14 rounded-xl"
-              placeholder="Role Name"
-              value={roleName}
-              onChange={(e) => setRoleName(e.target.value)}
-            />
-
-            <Input
-              className="h-14 rounded-xl"
-              placeholder="Description Role"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="rounded-3xl shadow-lg">
-        <CardContent className="min-h-[550px] p-0">
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
+    <Tabs
+      value={activeTab}
+      onValueChange={setActiveTab}
+    >
+      <TabsList
+        variant="line"
+        className="
+          w-full
+          h-10
+          justify-start
+          rounded-none
+          bg-transparent
+          p-0
+        "
+      >
+        {permissionModules.map((module) => (
+          <TabsTrigger
+            key={module.key}
+            value={module.key}
+            className="
+              relative
+              h-10
+              rounded-none
+              text-[15px]
+              font-medium
+              data-active:text-blue-600
+              data-active:after:bg-blue-600
+              data-active:after:h-[3px]
+              data-active:after:opacity-100
+            "
           >
-            <TabsList
-              variant="line"
-              className="
-                w-full
-                h-10
-                justify-start
-                rounded-none
-                bg-transparent
-                p-0
-              "
-            >
-              {permissionModules.map((module) => (
-                <TabsTrigger
-                  key={module.key}
-                  value={module.key}
-                  className="
-                    relative
-                    h-10
-                    rounded-none
-                    text-[15px]
-                    font-medium
-                    data-active:text-blue-600
-                    data-active:after:bg-blue-600
-                    data-active:after:h-[3px]
-                    data-active:after:opacity-100
-                  "
-                >
-                  {module.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            {module.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
 
-            {permissionModules.map((module) => (
-              <TabsContent
-                key={module.key}
-                value={module.key}
-                className="m-0"
-              >
-                <table className="w-full">
-                  <thead>
-                    <tr className="h-12">
-                      <th className="w-[20%] text-left px-6">
-                        Name
-                      </th>
-
-                      <th className="text-center">
-                        All Access
-                      </th>
-
-                      <th className="text-center">
-                        View
-                      </th>
-
-                      <th className="text-center">
-                        Create
-                      </th>
-
-                      <th className="text-center">
-                        Update
-                      </th>
-
-                      <th className="text-center">
-                        Delete
-                      </th>
-
-                      <th className="text-center">
-                        Export
-                      </th>
-
-                      <th className="text-center">
-                        Review
-                      </th>
-
-                      <th className="text-center">
-                        Approve
-                      </th>
-
-                      <th className="text-center">
-                        Reject
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {renderPermissionRows(module.key)}
-                  </tbody>
-                </table>
-              </TabsContent>
-            ))}
-          </Tabs>
-
-        </CardContent>
-      </Card>
-      {/* Card Permission nanti */}
-
-      <div className="flex justify-end gap-4">
-        <Button
-          variant="outline"
-          className="rounded-lg border border-gray-300 px-15 py-2 text-sm text-gray-700 hover:bg-gray-100"
-          onClick={() => router.push("/roleManagement")}
+      {permissionModules.map((module) => (
+        <TabsContent
+          key={module.key}
+          value={module.key}
+          className="m-0"
         >
-          Cancel
-        </Button>
+          <table className="w-full">
+            <thead>
+              <tr className="h-12">
+                <th className="w-[20%] text-left px-6">
+                  Name
+                </th>
 
-        <Button
-          className="rounded-lg bg-blue-600 px-15 py-2 text-sm text-white hover:bg-blue-700"
-        >
-          {mode === "create" ? "Save" : "Update"}
-        </Button>
-      </div>
-    </div>
+                <th className="text-center">
+                  All Access
+                </th>
+
+                <th className="text-center">
+                  View
+                </th>
+
+                <th className="text-center">
+                  Create
+                </th>
+
+                <th className="text-center">
+                  Update
+                </th>
+
+                <th className="text-center">
+                  Delete
+                </th>
+
+                <th className="text-center">
+                  Export
+                </th>
+
+                <th className="text-center">
+                  Review
+                </th>
+
+                <th className="text-center">
+                  Approve
+                </th>
+
+                <th className="text-center">
+                  Reject
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {renderPermissionRows(module.key)}
+            </tbody>
+          </table>
+        </TabsContent>
+      ))}
+    </Tabs>
   );
 }

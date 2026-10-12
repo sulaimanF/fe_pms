@@ -1,6 +1,6 @@
 "use client";
 
-import { DataTables, DataTablesSearch, DataTablesColumnToggle } from "@/components/tables/index";
+import { DataTables, DataTablesSearch } from "@/components/tables/index";
 import { useDataTable } from "@/hooks/useDataTable";
 import { columns } from "./columns";
 import Link from "next/link";
@@ -8,8 +8,16 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUsers } from "@/hooks/useUsers";
 import Loading from "./loading";
+import { AccessGuard, AccessDenied } from "@/components/auth/AccessGuard";
+import { ACCESS, isForbidden } from "@/lib/authorization";
+import { useAuthorization } from "@/hooks/useAuthorization";
 
 export default function UserManagementPage() {
+  return <AccessGuard permissions={ACCESS.userList}><UserManagementContent /></AccessGuard>;
+}
+
+function UserManagementContent() {
+  const access = useAuthorization();
   const {
     data,
     isLoading,
@@ -22,7 +30,7 @@ export default function UserManagementPage() {
     setGlobalFilter,
   } = useDataTable({
     data: data?.data ?? [],
-    columns,
+    columns: columns(access.can(ACCESS.userUpdate)),
   });
 
   if (isLoading) {
@@ -30,6 +38,7 @@ export default function UserManagementPage() {
   }
 
   if (error) {
+    if (isForbidden(error)) return <AccessDenied />;
     return <div>Terjadi kesalahan.</div>;
   }
 
@@ -40,7 +49,7 @@ export default function UserManagementPage() {
       description="Manage user data"
       headerClassName="bg-blue-600 text-white"
       actions={
-        <Button
+        access.can(ACCESS.userCreate) && <Button
           asChild
           className="bg-blue-600 hover:bg-blue-700"
         >

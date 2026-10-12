@@ -2,6 +2,7 @@
 
 import AppSidebar from "@/components/layout/AppSidebar";
 import AppHeader from "@/components/layout/AppHeader";
+import { RouteAccessGuard } from "@/components/auth/AccessGuard";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 
 export default function RoleManagementLayout({
@@ -11,6 +12,7 @@ export default function RoleManagementLayout({
 }) {
 
   return (
+    <RouteAccessGuard>
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
@@ -20,5 +22,6 @@ export default function RoleManagementLayout({
         </main>
       </SidebarInset>
     </SidebarProvider>
+    </RouteAccessGuard>
   );
 }

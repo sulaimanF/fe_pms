@@ -7,8 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowUpRight } from "lucide-react";
 import { outletData } from "./data";
 import OutletModal from "./outletModal";
+import { AccessGuard } from "@/components/auth/AccessGuard";
+import { ACCESS } from "@/lib/authorization";
 
 export default function CreateUserPage() {
+  return <AccessGuard permissions={ACCESS.userCreate}><CreateUserContent /></AccessGuard>;
+}
+
+function CreateUserContent() {
 
   const [openModal, setOpenModal] = useState(false);
 

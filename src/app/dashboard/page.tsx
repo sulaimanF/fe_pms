@@ -1,25 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
-import type { RootState } from "@/store/store";
+import { useAppSelector } from "@/store/hooks";
+import { AccessGuard } from "@/components/auth/AccessGuard";
+import { ACCESS } from "@/lib/authorization";
 
 export default function DashboardPage() {
-  
-  const router = useRouter();
-  const user = useSelector(
-    (state: RootState) => state.auth.user
-  );
-  const isAuthenticated = useSelector(
-    (state: RootState) => state.auth.isAuthenticated
-  );
+  return <AccessGuard permissions={ACCESS.dashboard}><DashboardContent /></AccessGuard>;
+}
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
-    }
-  }, [isAuthenticated, router]);
+function DashboardContent() {
+  
+  const user = useAppSelector(
+    (state) => state.auth.user
+  );
 
   return (
     <div className="p-6">

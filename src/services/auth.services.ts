@@ -1,9 +1,14 @@
 import api from "@/lib/axios";
 import type { ApiResponse } from "@/types/common";
 import type { MeResponse } from "@/types/auth";
+import type { SessionContext } from "@/lib/session";
 
-export const getMe = async () => {
-  const response = await api.get<ApiResponse<MeResponse>>("/auth/me");
+// Only the initial OTP profile request delegates failures to the login rollback.
+export const getMe = async (loginAttempt?: SessionContext) => {
+  const response = await api.get<ApiResponse<MeResponse>>("/auth/me", {
+    sessionContext: loginAttempt,
+    sessionMode: loginAttempt ? "login-profile" : undefined,
+  });
   return response.data;
 }
 

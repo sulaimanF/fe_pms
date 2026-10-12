@@ -25,6 +25,8 @@ import { useAppSelector } from "@/store/hooks";
 import { useState } from "react";
 import ConfirmDialogsLogout from "@/components/dialogs/ConfirmDiloagsLogout";
 import LoadingOverlay from "../ui/LoadingOverlay";
+import { useAuthorization } from "@/hooks/useAuthorization";
+import { getRoutePermissions } from "@/lib/authorization";
 
 type NavLink = {
     icon: React.ElementType;
@@ -74,6 +76,15 @@ export default function AppSidebar() {
   const menu = useAppSelector(
     (state) => state.auth.menu
   );
+  const access = useAuthorization();
+  const visibleMenu = access.allowed ? menu.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => {
+      const required = getRoutePermissions(item.path);
+      return required === null || access.can(required);
+    }),
+  })).filter((section) => section.items.length > 0) : [];
+  const visibleUser = access.allowed ? user : null;
 
   const iconMap = {
     Bell,
@@ -131,11 +142,11 @@ export default function AppSidebar() {
           {!collapsed && (
             <>
               <h3 className="text-sidebar-foreground font-medium">
-                {user?.display_name ?? user?.full_name ?? user?.username}
+                {visibleUser?.display_name ?? visibleUser?.full_name ?? visibleUser?.username}
               </h3>
 
               <p className="text-sidebar-foreground/80 text-sm">
-                {user?.roles?.[0]?.name ?? "-"}
+                {visibleUser?.roles?.[0]?.name ?? "-"}
               </p>
             </>
           )}
@@ -144,7 +155,7 @@ export default function AppSidebar() {
 
         {/* Content */}
         <SidebarContent>
-        {menu.map((section, index) => (
+        {visibleMenu.map((section, index) => (
           <SidebarGroup
             key={`${section.title}-${index}`}
             className={collapsed ? "px-2 py-1" : "px-3 py-1"}

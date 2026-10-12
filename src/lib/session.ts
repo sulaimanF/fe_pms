@@ -5,10 +5,14 @@ export interface SessionContext {
   token: string | null;
 }
 
+export type SessionStatus = "pending" | "verifying" | "valid" | "invalid" | "failed";
+
 interface SessionSnapshot {
   id: number;
   ready: boolean;
   ending: boolean;
+  status: SessionStatus;
+  failure: "forbidden" | "unavailable" | null;
 }
 
 export type SessionEvent =
@@ -16,7 +20,7 @@ export type SessionEvent =
   | { type: "ended"; id: number; reason: "logout" | "expired" | "external"; storageCleared: boolean }
   | { type: "revocation-failed"; id: number };
 
-const serverSnapshot: SessionSnapshot = { id: 0, ready: false, ending: false };
+const serverSnapshot: SessionSnapshot = { id: 0, ready: false, ending: false, status: "pending", failure: null };
 let snapshot = serverSnapshot;
 let token: string | null = null;
 let endingToken: string | null = null;
@@ -74,8 +78,15 @@ export function assertSession(id: number) {
 export function initializeSession(credential: string | null) {
   token = credential;
   endingToken = null;
-  publish({ id: snapshot.id + 1, ready: true, ending: false });
+  publish({ id: snapshot.id + 1, ready: true, ending: false, status: credential ? "verifying" : "invalid", failure: null });
   return captureSession();
+}
+
+// Verification is deliberately kept in memory; persisted auth is never proof of validity.
+export function setSessionStatus(context: SessionContext, status: "verifying" | "valid" | "failed", failure: SessionSnapshot["failure"] = null) {
+  if (!isCurrentSession(context) || !context.token) return false;
+  publish({ ...snapshot, status, failure });
+  return true;
 }
 
 export function registerSessionRequest(controller: AbortController, id: number) {
@@ -86,7 +97,7 @@ export function registerSessionRequest(controller: AbortController, id: number) 
 export function beginSessionEnd() {
   const previous = captureSession();
   endingToken = previous.token;
-  publish({ id: snapshot.id + 1, ready: true, ending: true });
+  publish({ id: snapshot.id + 1, ready: true, ending: true, status: "invalid", failure: null });
   requests.forEach((id, controller) => {
     if (id === previous.id) {
       controller.abort();

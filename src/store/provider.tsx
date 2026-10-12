@@ -13,8 +13,8 @@ import {
   getServerSessionSnapshot, subscribeSession,
 } from "@/lib/session";
 import { endSession } from "@/lib/sessionLifecycle";
-import { getMe } from "@/services/auth.services";
-import { prepareSession, setAuthData } from "./slices/authSlice";
+import { verifySession } from "@/lib/sessionVerification";
+import { prepareSession } from "./slices/authSlice";
 import { store, persistor } from "./store";
 
 function SessionBoundary({ children }: { children: React.ReactNode }) {
@@ -51,7 +51,7 @@ function SessionBoundary({ children }: { children: React.ReactNode }) {
       const context = !getSessionSnapshot().ready || external
         ? initializeSession(readStoredToken()) : captureSession();
       const auth = store.getState().auth;
-      if (auth.isAuthenticated && auth.token === context.token && context.token) return;
+      if (getSessionSnapshot().status === "valid" && auth.isAuthenticated && auth.token === context.token && context.token) return;
       if (!context.token) {
         if (auth.reference && !auth.isAuthenticated && !auth.token) {
           store.dispatch(prepareSession());
@@ -62,23 +62,13 @@ function SessionBoundary({ children }: { children: React.ReactNode }) {
         }
         return;
       }
-      // A different tab's token must never be paired with this tab's old profile.
-      store.dispatch(prepareSession());
-      try {
-        const me = await getMe();
-        if (!active || ownVersion !== version || !isCurrentSession(context)) return;
-        store.dispatch(setAuthData({
-          token: context.token,
-          token_type: localStorage.getItem("token_type") ?? "Bearer",
-          ...me.data,
-        }));
-      } catch {
-        if (active && ownVersion === version && isCurrentSession(context)) {
-          toast.warning("Data sesi belum dapat dimuat. Silakan coba login kembali.");
-        }
+      const incompleteLogin = !external && !(auth.isAuthenticated && auth.token === context.token);
+      const result = await verifySession(context, incompleteLogin);
+      if (active && ownVersion === version && result?.rollbackId === getSessionSnapshot().id) {
+        toast.warning("Data sesi belum dapat dimuat. Silakan coba login kembali.");
       }
     };
-    // Preserve an already hydrated session and valid pending OTP on first mount.
+    // Revalidate restored auth; preserve a pending OTP and reuse an in-memory verified login.
     void synchronize();
 
     const onStorage = (event: StorageEvent) => {

@@ -14,6 +14,9 @@ import { useOrganizationUnits } from "@/hooks/useOrganizationUnits";
 import { useOutlets } from "@/hooks/useOutlets";
 import { useWatch } from "react-hook-form";
 import FormSkeleton from "@/components/skeletons/FormSkeleton"
+import { AccessGuard, AccessDenied } from "@/components/auth/AccessGuard";
+import { ACCESS, isForbidden } from "@/lib/authorization";
+import { useAuthorization } from "@/hooks/useAuthorization";
 
 type FormValues = {
   username: string;
@@ -24,6 +27,11 @@ type FormValues = {
 };
 
 export default function UpdateUserPage() {
+  return <AccessGuard permissions={ACCESS.userUpdate}><UpdateUserContent /></AccessGuard>;
+}
+
+function UpdateUserContent() {
+  const roleAccess = useAuthorization(ACCESS.roleList);
 
   const params = useParams();
   const id = Number(params.id);
@@ -32,6 +40,7 @@ export default function UpdateUserPage() {
     data,
     isLoading,
     isError,
+    error,
   } = useUser(id);
 
   const user = data?.data;
@@ -39,10 +48,10 @@ export default function UpdateUserPage() {
   const [openModal, setOpenModal] = useState(false);
   const [selectedOutlet, setSelectedOutlet] = useState<number[]>([]);
 
-  const { data: roleResponse } = useRoles();
-  const roles = roleResponse?.data ?? [];
+  const { data: roleResponse, error: roleError } = useRoles();
+  const roles = roleAccess.allowed ? roleResponse?.data ?? [] : [];
 
-  const { data: organizationResponse } = useOrganizationUnits();
+  const { data: organizationResponse, error: organizationError } = useOrganizationUnits();
   const organizationUnits = organizationResponse?.data ?? [];
 
   const form = useForm<FormValues>({
@@ -63,7 +72,7 @@ export default function UpdateUserPage() {
   // console.log("organizationUnits", organizationUnits);
   // console.log("form value", form.watch("organizationUnit"));
 
-  const { data: outletResponse } = useOutlets(
+  const { data: outletResponse, error: outletError } = useOutlets(
     organizationUnitId
       ? Number(organizationUnitId)
       : undefined
@@ -105,10 +114,12 @@ export default function UpdateUserPage() {
   }
 
   if (isError) {
+    if (isForbidden(error)) return <AccessDenied />;
     return (
       <div>Terjadi kesalahan.</div>
     );
   }
+  if (isForbidden(organizationError) || isForbidden(outletError)) return <AccessDenied />;
 
   return (
     <div className="max-w-3xl space-y-8">
@@ -129,7 +140,7 @@ export default function UpdateUserPage() {
         />
 
         <label>Role</label>
-        <Controller
+        {!roleAccess.allowed || isForbidden(roleError) ? <AccessDenied message="Anda tidak memiliki izin untuk melihat daftar role." /> : <Controller
           control={form.control}
           name="role"
           render={({ field }) => (
@@ -153,7 +164,7 @@ export default function UpdateUserPage() {
               </SelectContent>
             </Select>
           )}
-        />
+        />}
 
         <label>Kantor Wilayah</label>
         <Controller

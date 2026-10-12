@@ -4,7 +4,7 @@ import type { SessionContext } from "@/lib/session";
 
 declare module "axios" {
   interface AxiosRequestConfig {
-    sessionMode?: "global" | "revoke";
+    sessionMode?: "global" | "revoke" | "login-profile";
     sessionContext?: SessionContext;
     releaseSessionRequest?: () => void;
   }
@@ -67,7 +67,9 @@ api.interceptors.response.use((response) => {
   config?.releaseSessionRequest?.();
   const context = config?.sessionContext;
   if (context && !isCurrentSession(context)) return Promise.reject(new CanceledError("Session ended."));
-  if (context?.token && error.response?.status === 401 && !publicAuthPaths.has(config?.url ?? "")) {
+  // The OTP flow owns rollback until the initial profile has been loaded.
+  const isLoginProfile = config?.sessionMode === "login-profile" && config.url === "/auth/me";
+  if (context?.token && error.response?.status === 401 && !isLoginProfile && !publicAuthPaths.has(config?.url ?? "")) {
     emitSessionEvent({ type: "unauthorized", context });
   }
   return Promise.reject(error);

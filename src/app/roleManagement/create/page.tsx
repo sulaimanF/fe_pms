@@ -6,8 +6,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import PermissionRole from "@/components/role/PermissionRole";
+import { AccessGuard } from "@/components/auth/AccessGuard";
+import { ACCESS, canAccess } from "@/lib/authorization";
+import { toast } from "sonner";
 
 export default function CreateRolePage() {
+  return <AccessGuard permissions={ACCESS.roleCreate}><CreateRoleContent /></AccessGuard>;
+}
+
+function CreateRoleContent() {
   const router = useRouter();
 
   const [roleName, setRoleName] = useState("");
@@ -19,6 +26,10 @@ export default function CreateRolePage() {
   };
 
   const handleSave = () => {
+    if (!canAccess(ACCESS.roleCreate)) {
+      toast.error("Anda tidak memiliki izin untuk membuat role.");
+      return;
+    }
     console.log("ROLE NAME:", roleName);
     console.log("DESCRIPTION:", description);
     console.log("SELECTED PERMISSIONS:", selectedPermissions);

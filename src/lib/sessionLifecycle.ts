@@ -7,6 +7,7 @@ import type { SessionContext } from "@/lib/session";
 import { logout as revokeToken } from "@/services/auth.services";
 import { logout, prepareSession } from "@/store/slices/authSlice";
 import { clearPersistedSession, store } from "@/store/store";
+import { logAuthRequestError } from "@/lib/authErrorLogging";
 
 interface EndSessionOptions {
   reason?: "logout" | "expired" | "external";
@@ -48,8 +49,9 @@ export function endSession({ reason = "logout", context = captureSession() }: En
     }
     if (reason === "logout" && context.token) {
       // Captured credentials stay out of mutation variables/cache and persistence.
-      void revokeToken(context.token).catch(() => {
+      void revokeToken(context.token).catch((error: unknown) => {
         if (getSessionSnapshot().id === transition.id) {
+          logAuthRequestError("logout-revocation", error);
           emitSessionEvent({ type: "revocation-failed", id: transition.id });
         }
       });

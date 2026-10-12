@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { usePermissions } from "@/hooks/usePermissions";
+import { AccessGuard, AccessDenied } from "@/components/auth/AccessGuard";
+import { ACCESS, isForbidden } from "@/lib/authorization";
 
 interface PermissionRoleProps {
   selectedPermissions: number[];
@@ -19,10 +21,18 @@ export default function PermissionRole({
   selectedPermissions,
   onChange,
 }: PermissionRoleProps) {
+  return <AccessGuard permissions={ACCESS.permissionCatalog}><PermissionRoleContent selectedPermissions={selectedPermissions} onChange={onChange} /></AccessGuard>;
+}
+
+function PermissionRoleContent({
+  selectedPermissions,
+  onChange,
+}: PermissionRoleProps) {
 
   const {
     data: permissionData,
     isLoading: permissionLoading,
+    error,
   } = usePermissions();
 
   const permissions = (permissionData?.data ?? []).filter(
@@ -378,6 +388,11 @@ export default function PermissionRole({
       </tr>,
     ];
   };
+
+  if (error) {
+    return isForbidden(error) ? <AccessDenied /> : <div role="alert">Katalog permission gagal dimuat.</div>;
+  }
+  if (permissionLoading) return <div role="status">Memuat permission...</div>;
 
   return (
     <Tabs

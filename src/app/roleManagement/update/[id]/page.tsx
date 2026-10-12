@@ -9,8 +9,15 @@ import { Button } from "@/components/ui/button";
 
 import PermissionRole from "@/components/role/PermissionRole";
 import { useRole } from "@/hooks/useRoles";
+import { AccessGuard, AccessDenied } from "@/components/auth/AccessGuard";
+import { ACCESS, canAccess, isForbidden } from "@/lib/authorization";
+import { toast } from "sonner";
 
 export default function UpdateRolePage() {
+  return <AccessGuard permissions={ACCESS.roleUpdate}><UpdateRoleContent /></AccessGuard>;
+}
+
+function UpdateRoleContent() {
   const router = useRouter();
   const params = useParams();
 
@@ -19,6 +26,7 @@ export default function UpdateRolePage() {
   const {
     data: roleData,
     isLoading: roleLoading,
+    error,
   } = useRole(roleId);
 
   const [roleName, setRoleName] = useState("");
@@ -44,6 +52,10 @@ export default function UpdateRolePage() {
   };
 
   const handleUpdate = () => {
+    if (!canAccess(ACCESS.roleUpdate)) {
+      toast.error("Anda tidak memiliki izin untuk mengubah role.");
+      return;
+    }
     console.log("ROLE ID:", roleId);
     console.log("ROLE NAME:", roleName);
     console.log("DESCRIPTION:", description);
@@ -57,6 +69,9 @@ export default function UpdateRolePage() {
 
   if (roleLoading) {
     return <div>Loading...</div>;
+  }
+  if (error) {
+    return isForbidden(error) ? <AccessDenied /> : <div>Terjadi kesalahan.</div>;
   }
 
   return (

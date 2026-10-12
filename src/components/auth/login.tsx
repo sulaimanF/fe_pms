@@ -6,6 +6,7 @@ import api from "@/lib/axios";
 import React, { useEffect, useRef, useState } from "react";
 import { useAppDispatch } from "@/store/hooks";
 import { captureSession, isCurrentSession } from "@/lib/session";
+import { logAuthRequestError } from "@/lib/authErrorLogging";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
@@ -87,6 +88,8 @@ export default function Login() {
       }
     } catch (error: unknown) {
       if (!mounted.current || !isCurrentSession(context) || axios.isCancel(error)) return;
+
+      logAuthRequestError("login", error);
 
       if (axios.isAxiosError(error)) {
         if (error.response) {

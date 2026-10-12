@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Role } from "@/types/role"
 import DataTablesActions from "@/components/tables/DataTablesActions";
 
-export const columns = ( onDelete: (id: number) => void): ColumnDef<Role>[] => [
+export const columns = (onDelete: (id: number) => void, access: { edit: boolean; delete: boolean }): ColumnDef<Role>[] => [
   {
     accessorKey: "name",
     header: "Role Name",
@@ -25,8 +25,8 @@ export const columns = ( onDelete: (id: number) => void): ColumnDef<Role>[] => [
       <DataTablesActions
         row={row.original}
         variant="inline"
-        editHref={`/roleManagement/update/${row.original.id}`}
-        onDelete={() => onDelete(row.original.id)}
+        editHref={access.edit ? `/roleManagement/update/${row.original.id}` : undefined}
+        onDelete={access.delete ? () => onDelete(row.original.id) : undefined}
       />
     ),
   }

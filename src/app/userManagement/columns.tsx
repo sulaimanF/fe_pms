@@ -6,7 +6,7 @@ import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-export const columns: ColumnDef<UserManagement>[] = [
+export const columns = (canEdit: boolean): ColumnDef<UserManagement>[] => [
   {
     accessorKey: "username",
     header: "Login ID",
@@ -38,21 +38,18 @@ export const columns: ColumnDef<UserManagement>[] = [
     id: "actions",
     header: "Actions",
     enableHiding: false,
-    cell: ({ row }) => (
+    cell: ({ row }) => canEdit ? (
       <Button
+        asChild
         variant="ghost"
         size="icon"
         title="Edit User"
-        // onClick={() => handleEdit(row.original)}
-        onClick={() => {
-          console.log("Edit", row.original);
-        }}
       >
       
         <Link href={`/userManagement/update/${row.original.id}`}>
           <Pencil className="h-4 w-4 cursor-pointer" />
         </Link>
       </Button>
-    ),
+    ) : null,
   }
 ];

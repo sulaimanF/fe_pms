@@ -11,10 +11,10 @@ export function useSessionQuery() {
   const token = useAppSelector((state) => state.auth.token);
   return {
     id: session.id,
-    enabled: authenticated && !!token && token === captureSession().token && session.ready && !session.ending,
+    enabled: authenticated && !!token && token === captureSession().token && session.ready && !session.ending && session.status === "valid",
     meta: { scope: "session", sessionId: session.id },
     retry: (count: number, error: unknown) => !axios.isCancel(error) &&
-      !(axios.isAxiosError(error) && error.response?.status === 401) && count < 1,
+      !(axios.isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) && count < 1,
   };
 }
 

@@ -6,8 +6,10 @@ import api from "@/lib/axios";
 import React, { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { captureSession, isCurrentSession } from "@/lib/session";
-import { acceptSessionCredentials } from "@/lib/sessionLifecycle";
+import { captureSession, isCurrentSession, setSessionStatus } from "@/lib/session";
+import type { SessionContext } from "@/lib/session";
+import { acceptSessionCredentials, endSession } from "@/lib/sessionLifecycle";
+import { persistor } from "@/store/store";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -19,11 +21,15 @@ import { otpSchema, OtpFormData } from "@/validations/otpSchema";
 import type { AuthResponse, LoginResponse } from "@/types/auth";
 import type { ApiResponse } from "@/types/common";
 import { getMe } from "@/services/auth.services";
+import { isMeResponse } from "@/lib/sessionVerification";
+
+type LoginStage = "idle" | "verifying" | "loading-profile" | "authenticated" | "failed";
 
 export default function OtpForm() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const mounted = useRef(true);
+  const requestInFlight = useRef(false);
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; };
@@ -41,6 +47,7 @@ export default function OtpForm() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [stage, setStage] = useState<LoginStage>("idle");
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   const isExpired = timeLeft === 0;
@@ -84,16 +91,20 @@ export default function OtpForm() {
   }, [expired_at]);
 
   const handleVerifyOtp = async (data: OtpFormData) => {
+    if (requestInFlight.current) return;
     let context = captureSession();
     if (!isCurrentSession(context)) return;
-    if (loading || isExpired) {
+    if (isExpired) {
+      setStage("failed");
       toast.error("Kode OTP telah kadaluarsa.");
       return;
     }
 
-    if (loading) return;
-
+    requestInFlight.current = true;
+    let profileSession: SessionContext | null = null;
+    let authenticated = false;
     setLoading(true);
+    setStage("verifying");
 
     try {
       const verifyEndpoint =
@@ -124,10 +135,15 @@ export default function OtpForm() {
       const nextSession = await acceptSessionCredentials(context, authData.token, authData.token_type);
       if (!nextSession) return;
       context = nextSession;
+      profileSession = nextSession;
       if (!mounted.current || !isCurrentSession(context)) return;
 
-      const me = await getMe();
+      setStage("loading-profile");
+      const me = await getMe(context);
       if (!mounted.current || !isCurrentSession(context)) return;
+      if (!isMeResponse(me.data)) {
+        throw new Error("Incomplete authentication profile.");
+      }
 
       dispatch(
         setAuthData({
@@ -140,11 +156,18 @@ export default function OtpForm() {
         })
       );
 
+      await persistor.flush();
+      if (!mounted.current || !isCurrentSession(context)) return;
+      setSessionStatus(context, "valid");
+      authenticated = true;
+      setStage("authenticated");
       toast.success(response.data.message);
 
       router.replace("/dashboard");
 
     } catch (error) {
+      // Profile failures are handled by the rollback below, not as retryable OTP errors.
+      if (profileSession) return;
       if (!mounted.current || !isCurrentSession(context) || axios.isCancel(error)) return;
       if (axios.isAxiosError(error)) {
         toast.error(
@@ -155,12 +178,27 @@ export default function OtpForm() {
         toast.error("Terjadi kesalahan.");
       }
     } finally {
-      if (mounted.current) setLoading(false);
+      try {
+        if (profileSession && !authenticated) {
+          // Also runs after unmount; never leave an accepted credential without a profile.
+          if (mounted.current && isCurrentSession(profileSession)) {
+            setStage("failed");
+            toast.error("Verifikasi OTP berhasil, tetapi data akun gagal dimuat. Silakan login kembali untuk mendapatkan OTP baru.");
+          }
+          await endSession({ reason: "external", context: profileSession });
+        }
+      } finally {
+        requestInFlight.current = false;
+        if (mounted.current) {
+          if (!authenticated) setStage("failed");
+          setLoading(false);
+        }
+      }
     }
   };
 
   const handleResendOtp = async () => {
-    if (resending) return;
+    if (requestInFlight.current) return;
     const context = captureSession();
     if (!isCurrentSession(context)) return;
 
@@ -170,6 +208,7 @@ export default function OtpForm() {
       return;
     }
 
+    requestInFlight.current = true;
     setResending(true);
 
     try {
@@ -204,6 +243,7 @@ export default function OtpForm() {
         toast.error("Terjadi kesalahan.");
       }
     } finally {
+      requestInFlight.current = false;
       if (mounted.current) setResending(false);
     }
   };
@@ -223,7 +263,11 @@ export default function OtpForm() {
             />
           </div>
           <div>
-            <form onSubmit={(event) => { void handleSubmit(handleVerifyOtp)(event); }}>
+            <form
+              onSubmit={(event) => { void handleSubmit(handleVerifyOtp)(event); }}
+              aria-busy={loading || resending}
+              data-auth-stage={stage}
+            >
               {/* Description */}
               <div className="mb-6 text-center">
                 <p className="text-[20px] leading-8 text-gray-500">
@@ -255,7 +299,7 @@ export default function OtpForm() {
                       inputMode="numeric"
                       autoComplete="one-time-code"
                       maxLength={11} // 6 angka + 5 spasi
-                      disabled={loading || isExpired}
+                      disabled={loading || resending || isExpired}
                       value={field.value.split("").join(" ")}
                       onChange={(e) => {
                         // Hilangkan semua selain angka
@@ -307,10 +351,13 @@ export default function OtpForm() {
               <div className="mb-5">
                 <Button
                   type="submit"
-                  disabled={loading || isExpired}
+                  disabled={loading || resending || isExpired}
                   className="h-[55px] w-full rounded-2xl bg-[#0D5EF4] text-lg font-bold text-white hover:bg-[#0B4ED0]"
               >
-                  {loading ? "Memverifikasi..." : "VERIFIKASI OTP"}
+                  {loading
+                    ? stage === "loading-profile" ? "Memuat data akun..."
+                      : stage === "failed" ? "Menyiapkan login ulang..." : "Memverifikasi..."
+                    : "VERIFIKASI OTP"}
               </Button>
               </div>
               {/* Button Submit OTP */}
@@ -324,7 +371,7 @@ export default function OtpForm() {
                     </p>
                     <button
                       type="button"
-                      disabled={resending}
+                      disabled={loading || resending}
                       onClick={handleResendOtp}
                       className="
                         text-[20px]

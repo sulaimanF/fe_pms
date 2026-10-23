@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { getOrganizationUnits } from "@/services/organizationUnit.service";
+import { getOrganizationUnits, getAllOrganizationUnits } from "@/services/organizationUnit.service";
 import { useSessionQuery } from "@/hooks/useAuth";
 import { sessionQueryKey } from "@/lib/queryClient";
 import { requestInSession } from "@/lib/session";
 
-export const useOrganizationUnits = () => {
+export const useOrganizationUnits = (complete = false) => {
   const session = useSessionQuery();
   return useQuery({
     ...session,
-    queryKey: sessionQueryKey(session.id, "organization-units"),
-    queryFn: () => requestInSession(session.id, getOrganizationUnits),
+    queryKey: complete ? sessionQueryKey(session.id, "organization-units", "lookup") : sessionQueryKey(session.id, "organization-units"),
+    queryFn: () => requestInSession(session.id, complete ? getAllOrganizationUnits : getOrganizationUnits),
   });
 };

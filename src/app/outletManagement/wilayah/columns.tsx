@@ -54,12 +54,7 @@ export const columns: ColumnDef<OrganizationUnit>[] = [
       <DataTablesActions
         variant="inline"
         row={row.original}
-        onEdit={(data) => {
-          console.log("Edit", data);
-        }}
-        onDelete={(data) => {
-          console.log("Delete", data);
-        }}
+        unavailable
       />
       // <DataTablesActions
       //   row={row.original}

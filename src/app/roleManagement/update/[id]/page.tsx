@@ -1,133 +1,22 @@
 "use client";
-
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-
-import PermissionRole from "@/components/role/PermissionRole";
-import { useRole } from "@/hooks/useRoles";
+import { useParams } from "next/navigation";
+import UpdateRoleForm from "@/components/role/UpdateRoleForm";
 import { AccessGuard, AccessDenied } from "@/components/auth/AccessGuard";
-import { ACCESS, canAccess, isForbidden } from "@/lib/authorization";
-import { toast } from "sonner";
-
+import FormSkeleton from "@/components/skeletons/FormSkeleton";
+import { Button } from "@/components/ui/button";
+import { useRole } from "@/hooks/useRoles";
+import { ACCESS, isForbidden } from "@/lib/authorization";
+import { isValidEntityId } from "@/lib/managementApi";
 export default function UpdateRolePage() {
   return <AccessGuard permissions={ACCESS.roleUpdate}><UpdateRoleContent /></AccessGuard>;
 }
-
 function UpdateRoleContent() {
-  const router = useRouter();
   const params = useParams();
-
-  const roleId = Number(params.id);
-
-  const {
-    data: roleData,
-    isLoading: roleLoading,
-    error,
-  } = useRole(roleId);
-
-  const [roleName, setRoleName] = useState("");
-  const [description, setDescription] = useState("");
-  const [selectedPermissions, setSelectedPermissions] =
-    useState<number[]>([]);
-
-  useEffect(() => {
-    if (roleData?.data) {
-      setRoleName(roleData.data.name ?? "");
-      setDescription(roleData.data.description ?? "");
-
-      setSelectedPermissions(
-        (roleData.data.permissions ?? []).map(
-          (permission) => Number(permission.id)
-        )
-      );
-    }
-  }, [roleData]);
-
-  const handleCancel = () => {
-    router.push("/roleManagement");
-  };
-
-  const handleUpdate = () => {
-    if (!canAccess(ACCESS.roleUpdate)) {
-      toast.error("Anda tidak memiliki izin untuk mengubah role.");
-      return;
-    }
-    console.log("ROLE ID:", roleId);
-    console.log("ROLE NAME:", roleName);
-    console.log("DESCRIPTION:", description);
-    console.log(
-      "SELECTED PERMISSIONS:",
-      selectedPermissions
-    );
-
-    // API update role nanti di sini
-  };
-
-  if (roleLoading) {
-    return <div>Loading...</div>;
-  }
-  if (error) {
-    return isForbidden(error) ? <AccessDenied /> : <div>Terjadi kesalahan.</div>;
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Role Information */}
-      <Card className="rounded-3xl shadow-lg">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <Input
-              className="h-14 rounded-xl"
-              placeholder="Role Name"
-              value={roleName}
-              onChange={(e) =>
-                setRoleName(e.target.value)
-              }
-            />
-
-            <Input
-              className="h-14 rounded-xl"
-              placeholder="Description Role"
-              value={description}
-              onChange={(e) =>
-                setDescription(e.target.value)
-              }
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Permission */}
-      <Card className="rounded-3xl shadow-lg">
-        <CardContent className="min-h-[550px] p-0">
-          <PermissionRole
-            selectedPermissions={selectedPermissions}
-            onChange={setSelectedPermissions}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Action */}
-      <div className="flex justify-end gap-4">
-        <Button
-          variant="outline"
-          className="rounded-lg border border-gray-300 px-15 py-2 text-sm text-gray-700 hover:bg-gray-100"
-          onClick={handleCancel}
-        >
-          Cancel
-        </Button>
-
-        <Button
-          className="rounded-lg bg-blue-600 px-15 py-2 text-sm text-white hover:bg-blue-700"
-          onClick={handleUpdate}
-        >
-          Update
-        </Button>
-      </div>
-    </div>
-  );
+  const id = typeof params.id === "string" && /^[1-9]\d*$/.test(params.id) ? Number(params.id) : NaN;
+  const query = useRole(id);
+  if (!isValidEntityId(id)) return <p role="alert">ID role tidak valid.</p>;
+  if (query.isLoading) return <FormSkeleton />;
+  if (query.error) return isForbidden(query.error) ? <AccessDenied /> : <div role="alert">Detail role gagal dimuat. <Button onClick={() => { void query.refetch(); }}>Coba lagi</Button></div>;
+  if (!query.data?.data || !Array.isArray(query.data.data.permissions)) return <p role="alert">Detail role belum lengkap.</p>;
+  return <UpdateRoleForm key={id} role={query.data.data} />;
 }

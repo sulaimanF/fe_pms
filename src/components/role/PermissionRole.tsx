@@ -1,13 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@/components/ui/tabs";
+import { useState } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AccessGuard, AccessDenied } from "@/components/auth/AccessGuard";
 import { ACCESS, isForbidden } from "@/lib/authorization";
@@ -15,479 +11,72 @@ import { ACCESS, isForbidden } from "@/lib/authorization";
 interface PermissionRoleProps {
   selectedPermissions: number[];
   onChange: (permissions: number[]) => void;
+  disabled?: boolean;
 }
+const actionOrder = ["viewAny", "view", "create", "update", "delete", "export", "review", "approve", "reject"];
+const labels: Record<string, string> = { viewAny: "View List", view: "View Detail" };
 
-export default function PermissionRole({
-  selectedPermissions,
-  onChange,
-}: PermissionRoleProps) {
-  return <AccessGuard permissions={ACCESS.permissionCatalog}><PermissionRoleContent selectedPermissions={selectedPermissions} onChange={onChange} /></AccessGuard>;
+export default function PermissionRole(props: PermissionRoleProps) {
+  return <AccessGuard permissions={ACCESS.permissionCatalog}><PermissionRoleContent {...props} /></AccessGuard>;
 }
-
-function PermissionRoleContent({
-  selectedPermissions,
-  onChange,
-}: PermissionRoleProps) {
-
-  const {
-    data: permissionData,
-    isLoading: permissionLoading,
-    error,
-  } = usePermissions();
-
-  const permissions = (permissionData?.data ?? []).filter(
-    (permission) => permission.is_active
-  );
-
-  const [activeTab, setActiveTab] = useState("");
-
-  const permissionModules = [
-    { key: "user", label: "User" },
-    { key: "role", label: "Role" },
-    { key: "outlet", label: "Outlet" },
-    { key: "org-unit", label: "Organization Unit" },
-    { key: "report", label: "Report" },
-    { key: "audit", label: "Audit" },
-    { key: "setting", label: "Setting" },
-    { key: "api-key", label: "API Key" },
-    { key: "permission-management", label: "Permission" },
-    { key: "menu-management", label: "Menu" },
-    { key: "assessment", label: "Questioner" },
-  ];
-
-  const getModulePermissions = (module: string) => {
-    return permissions.filter(
-      (permission) => permission.module === module
-    );
+function PermissionRoleContent({ selectedPermissions, onChange, disabled = false }: PermissionRoleProps) {
+  const query = usePermissions();
+  const [tab, setTab] = useState("");
+  const permissions = (query.data?.data ?? []).filter((item) => item.is_active);
+  const modules = [...new Set(permissions.map((item) => item.module))];
+  const activeTab = modules.includes(tab) ? tab : modules[0] ?? "";
+  const selected = new Set(selectedPermissions);
+  const toggle = (ids: number[], checked: boolean) => {
+    if (disabled) return;
+    const next = new Set(selected);
+    ids.forEach((id) => { if (checked) next.add(id); else next.delete(id); });
+    onChange([...next]);
   };
-
-  const togglePermission = (permissionId: number) => {
-    if (selectedPermissions.includes(permissionId)) {
-      onChange(
-        selectedPermissions.filter(
-          (id) => id !== permissionId
-        )
-      );
-    } else {
-      onChange([
-        ...selectedPermissions,
-        permissionId,
-      ]);
-    }
-  };
-
-  const toggleAllAccess = (module: string) => {
-    const modulePermissions = getModulePermissions(module);
-
-    const permissionIds = modulePermissions.map(
-      (permission) => Number(permission.id)
-    );
-
-    const allSelected =
-      permissionIds.length > 0 &&
-      permissionIds.every((id) =>
-        selectedPermissions.includes(id)
-      );
-
-    if (allSelected) {
-      onChange(
-        selectedPermissions.filter(
-          (id) => !permissionIds.includes(id)
-        )
-      );
-    } else {
-      onChange(
-        Array.from(
-          new Set([
-            ...selectedPermissions,
-            ...permissionIds,
-          ])
-        )
-      );
-    }
-  };
-
-  const isAllAccessSelected = (module: string) => {
-    const modulePermissions =
-      getModulePermissions(module);
-
-    if (modulePermissions.length === 0) {
-      return false;
-    }
-
-    return modulePermissions.every((permission) =>
-      selectedPermissions.includes(
-        Number(permission.id)
-      )
-    );
-  };
-
-  const isPermissionSelected = (
-    permissionId: number
-  ) => {
-    return selectedPermissions.includes(permissionId);
-  };
-
-  useEffect(() => {
-    if (
-      !activeTab &&
-      permissionModules.length > 0
-    ) {
-      setActiveTab(
-        permissionModules[0].key
-      );
-    }
-  }, [activeTab]);
-
-  // renderPermissionRows dipindahkan ke sini
-  const renderPermissionRows = (
-    module: string
-  ): React.ReactNode[] => {
-    const modulePermissions = getModulePermissions(module);
-    console.log("MODULE:", module);
-    console.log("MODULE PERMISSIONS:", modulePermissions);
-
-    const viewPermission = modulePermissions.find(
-      (permission) => permission.action === "viewAny"
-    );
-
-    const createPermission = modulePermissions.find(
-      (permission) => permission.action === "create"
-    );
-
-    const updatePermission = modulePermissions.find(
-      (permission) => permission.action === "update"
-    );
-
-    const deletePermission = modulePermissions.find(
-      (permission) => permission.action === "delete"
-    );
-
-    const exportPermission = modulePermissions.find(
-      (permission) => permission.action === "export"
-    );
-
-    const reviewPermission = modulePermissions.find(
-      (permission) => permission.action === "review"
-    );
-
-    const approvePermission = modulePermissions.find(
-      (permission) => permission.action === "approve"
-    );
-
-    const rejectPermission = modulePermissions.find(
-      (permission) => permission.action === "reject"
-    );
-    console.log("REVIEW:", reviewPermission);
-    console.log("APPROVE:", approvePermission);
-    console.log("REJECT:", rejectPermission);
-
-    return [
-      <tr key={module} className="border-b h-14">
-        <td className="px-6">
-          {permissionModules.find(
-            (item) => item.key === module
-          )?.label}
-        </td>
-
-        {/* ALL ACCESS */}
-        <td className="text-center">
-          <div className="flex items-center justify-center">
-            <Checkbox
-              checked={isAllAccessSelected(module)}
-              onCheckedChange={() =>
-                toggleAllAccess(module)
-              }
-            />
-          </div>
-        </td>
-
-        {/* VIEW */}
-        <td className="text-center">
-          <div className="flex items-center justify-center">
-            <Checkbox
-              checked={
-                viewPermission
-                  ? isPermissionSelected(
-                      Number(viewPermission.id)
-                    )
-                  : false
-              }
-              disabled={!viewPermission}
-              onCheckedChange={() => {
-                if (viewPermission) {
-                  togglePermission(
-                    Number(viewPermission.id)
-                  );
-                }
-              }}
-            />
-          </div>
-        </td>
-
-        {/* CREATE */}
-        <td className="text-center">
-          <div className="flex items-center justify-center">
-            <Checkbox
-              checked={
-                createPermission
-                  ? isPermissionSelected(
-                      Number(createPermission.id)
-                    )
-                  : false
-              }
-              disabled={!createPermission}
-              onCheckedChange={() => {
-                if (createPermission) {
-                  togglePermission(
-                    Number(createPermission.id)
-                  );
-                }
-              }}
-            />
-          </div>
-        </td>
-
-        {/* UPDATE */}
-        <td className="text-center">
-          <div className="flex items-center justify-center">
-            <Checkbox
-              checked={
-                updatePermission
-                  ? isPermissionSelected(
-                      Number(updatePermission.id)
-                    )
-                  : false
-              }
-              disabled={!updatePermission}
-              onCheckedChange={() => {
-                if (updatePermission) {
-                  togglePermission(
-                    Number(updatePermission.id)
-                  );
-                }
-              }}
-            />
-          </div>
-        </td>
-
-        {/* DELETE */}
-        <td className="text-center">
-          <div className="flex items-center justify-center">
-            <Checkbox
-              checked={
-                deletePermission
-                  ? isPermissionSelected(
-                      Number(deletePermission.id)
-                    )
-                  : false
-              }
-              disabled={!deletePermission}
-              onCheckedChange={() => {
-                if (deletePermission) {
-                  togglePermission(
-                    Number(deletePermission.id)
-                  );
-                }
-              }}
-            />
-          </div>
-        </td>
-
-        {/* EXPORT */}
-        <td className="text-center">
-          <div className="flex items-center justify-center">
-            <Checkbox
-              checked={
-                exportPermission
-                  ? isPermissionSelected(
-                      Number(exportPermission.id)
-                    )
-                  : false
-              }
-              disabled={!exportPermission}
-              onCheckedChange={() => {
-                if (exportPermission) {
-                  togglePermission(
-                    Number(exportPermission.id)
-                  );
-                }
-              }}
-            />
-          </div>
-        </td>
-
-        {/* REVIEW */}
-        <td className="text-center">
-          <div className="flex items-center justify-center">
-            <Checkbox
-              checked={
-                reviewPermission
-                  ? isPermissionSelected(
-                      Number(reviewPermission.id)
-                    )
-                  : false
-              }
-              disabled={!reviewPermission}
-              onCheckedChange={() => {
-                if (reviewPermission) {
-                  togglePermission(
-                    Number(reviewPermission.id)
-                  );
-                }
-              }}
-            />
-          </div>
-        </td>
-
-        {/* APPROVE */}
-        <td className="text-center">
-          <div className="flex items-center justify-center">
-            <Checkbox
-              checked={
-                approvePermission
-                  ? isPermissionSelected(
-                      Number(approvePermission.id)
-                    )
-                  : false
-              }
-              disabled={!approvePermission}
-              onCheckedChange={() => {
-                if (approvePermission) {
-                  togglePermission(
-                    Number(approvePermission.id)
-                  );
-                }
-              }}
-            />
-          </div>
-        </td>
-
-        {/* REJECT */}
-        <td className="text-center">
-          <div className="flex items-center justify-center">
-            <Checkbox
-              checked={
-                rejectPermission
-                  ? isPermissionSelected(
-                      Number(rejectPermission.id)
-                    )
-                  : false
-              }
-              disabled={!rejectPermission}
-              onCheckedChange={() => {
-                if (rejectPermission) {
-                  togglePermission(
-                    Number(rejectPermission.id)
-                  );
-                }
-              }}
-            />
-          </div>
-        </td>
-      </tr>,
-    ];
-  };
-
-  if (error) {
-    return isForbidden(error) ? <AccessDenied /> : <div role="alert">Katalog permission gagal dimuat.</div>;
-  }
-  if (permissionLoading) return <div role="status">Memuat permission...</div>;
-
+  if (query.error) return isForbidden(query.error) ? <AccessDenied /> :
+    <div role="alert" className="p-6">Katalog permission gagal dimuat. <Button type="button" variant="outline" onClick={() => { void query.refetch(); }}>Coba lagi</Button></div>;
+  if (query.isLoading) return <div role="status" className="p-6">Memuat seluruh katalog permission...</div>;
+  if (!permissions.length) return <div role="status" className="p-6">Tidak ada permission aktif. Assignment lama tetap dipertahankan.</div>;
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={setActiveTab}
-    >
-      <TabsList
-        variant="line"
-        className="
-          w-full
-          h-10
-          justify-start
-          rounded-none
-          bg-transparent
-          p-0
-        "
-      >
-        {permissionModules.map((module) => (
-          <TabsTrigger
-            key={module.key}
-            value={module.key}
-            className="
-              relative
-              h-10
-              rounded-none
-              text-[15px]
-              font-medium
-              data-active:text-blue-600
-              data-active:after:bg-blue-600
-              data-active:after:h-[3px]
-              data-active:after:opacity-100
-            "
-          >
-            {module.label}
-          </TabsTrigger>
-        ))}
+    <Tabs value={activeTab} onValueChange={setTab}>
+      <TabsList variant="line" className="w-full h-10 justify-start rounded-none bg-transparent p-0 overflow-x-auto">
+        {modules.map((module) => <TabsTrigger key={module} value={module} className="text-[15px]">{module}</TabsTrigger>)}
       </TabsList>
-
-      {permissionModules.map((module) => (
-        <TabsContent
-          key={module.key}
-          value={module.key}
-          className="m-0"
-        >
-          <table className="w-full">
-            <thead>
-              <tr className="h-12">
-                <th className="w-[20%] text-left px-6">
-                  Name
-                </th>
-
-                <th className="text-center">
-                  All Access
-                </th>
-
-                <th className="text-center">
-                  View
-                </th>
-
-                <th className="text-center">
-                  Create
-                </th>
-
-                <th className="text-center">
-                  Update
-                </th>
-
-                <th className="text-center">
-                  Delete
-                </th>
-
-                <th className="text-center">
-                  Export
-                </th>
-
-                <th className="text-center">
-                  Review
-                </th>
-
-                <th className="text-center">
-                  Approve
-                </th>
-
-                <th className="text-center">
-                  Reject
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {renderPermissionRows(module.key)}
-            </tbody>
-          </table>
-        </TabsContent>
-      ))}
+      {modules.map((module) => {
+        const items = permissions.filter((item) => item.module === module);
+        const actions = [...new Set(items.map((item) => item.action))].sort((a, b) => {
+          const index = (v: string) => actionOrder.includes(v) ? actionOrder.indexOf(v) : actionOrder.length;
+          return index(a) - index(b) || a.localeCompare(b);
+        });
+        const resources = [...new Set(items.map((item) => item.resource))];
+        return (
+          <TabsContent key={module} value={module} className="m-0 overflow-x-auto">
+            <table className="w-full">
+              <thead><tr className="h-12"><th className="text-left px-6">Resource</th><th>All Access</th>
+                {actions.map((action) => <th key={action}>{labels[action] ?? action}</th>)}
+              </tr></thead>
+              <tbody>{resources.map((resource) => {
+                const row = items.filter((item) => item.resource === resource);
+                return <tr key={resource} className="border-b h-14">
+                  <td className="px-6">{resource}</td>
+                  <td className="text-center"><Checkbox aria-label={resource + " all access"} disabled={disabled}
+                    checked={row.every((item) => selected.has(item.id))}
+                    onCheckedChange={(value) => toggle(row.map((item) => item.id), value === true)} /></td>
+                  {actions.map((action) => {
+                    const cells = row.filter((item) => item.action === action);
+                    return <td key={action} className="text-center">{cells.length ? cells.map((item) =>
+                      <label key={item.id} className="inline-flex items-center gap-1"><Checkbox aria-label={item.code}
+                        disabled={disabled} checked={selected.has(item.id)}
+                        onCheckedChange={(value) => toggle([item.id], value === true)} />
+                        {cells.length > 1 && <span className="text-xs">{item.code}</span>}
+                      </label>) : <Checkbox disabled aria-label={resource + " " + action + " tidak tersedia"} checked={false} />}</td>;
+                  })}
+                </tr>;
+              })}</tbody>
+            </table>
+          </TabsContent>
+        );
+      })}
+      <p className="p-4 text-sm text-gray-500">Permission yang sudah ditetapkan tetapi tidak tersedia dalam katalog aktif tetap dipertahankan.</p>
     </Tabs>
   );
 }

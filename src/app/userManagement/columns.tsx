@@ -19,18 +19,18 @@ export const columns = (canEdit: boolean): ColumnDef<UserManagement>[] => [
     accessorKey: "role",
     header: "Role",
     cell: ({ row }) =>
-    row.original.roles.map(role => role.name).join(", "),
+    (row.original.roles ?? []).map(role => role.name).join(", "),
   },
   {
     accessorKey: "kantorWilayah",
     header: "Kantor Wilayah",
-    cell: ({ row }) => row.original.organization_unit.name,
+    cell: ({ row }) => row.original.organization_unit?.name ?? "-",
   },
   {
     accessorKey: "outlet",
     header: "Outlet Kelolaan",
       cell: ({ row }) =>
-      row.original.outlets
+      (row.original.outlets ?? [])
         .map(outlet => outlet.name)
         .join(", "),
   },

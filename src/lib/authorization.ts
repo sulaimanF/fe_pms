@@ -10,9 +10,11 @@ export const ACCESS = {
   roleCreate: ["role.create"],
   roleUpdate: ["role.view", "role.update"],
   roleDelete: ["role.delete"],
+  roleAssignPermissions: ["role.update"],
   userList: ["user.viewAny"],
   userDetail: ["user.view"],
   userCreate: ["user.create"],
+  userAssignRoles: ["user.update"],
   userUpdate: ["user.view", "user.update"],
   permissionCatalog: ["permission.viewAny"],
 } as const;

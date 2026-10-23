@@ -15,6 +15,7 @@ interface DataTablesActionsProps<TData> {
   row: TData;
   variant?: "dropdown" | "inline";
   editHref?: string;
+  unavailable?: boolean;
   onView?: (row: TData) => void;
   onEdit?: (row: TData) => void;
   onDelete?: (row: TData) => void;
@@ -24,10 +25,13 @@ export default function DataTablesActions<TData>({
   row,
   variant = "dropdown",
   editHref,
+  unavailable = false,
   onView,
   onEdit,
   onDelete,
 }: DataTablesActionsProps<TData>) {
+  if (unavailable) return <div className="flex items-center gap-1"><Button disabled variant="ghost" size="icon" title="Edit belum tersedia"><Pencil className="h-4 w-4" /></Button><Button disabled variant="ghost" size="icon" title="Delete belum tersedia"><Trash2 className="h-4 w-4" /></Button><span className="text-xs text-gray-500">Belum tersedia</span></div>;
+
   const inlineActions = (
     <div className="flex items-center gap-1">
       {onView && (

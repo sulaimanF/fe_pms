@@ -34,12 +34,7 @@ export const columns: ColumnDef<Kcp>[] = [
       <DataTablesActions
         variant="inline"
         row={row.original}
-        onEdit={(data) => {
-          console.log("Edit", data);
-        }}
-        onDelete={(data) => {
-          console.log("Delete", data);
-        }}
+        unavailable
       />
     ),
   }

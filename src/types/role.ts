@@ -1,43 +1,15 @@
-// import { ApiResponse } from "./api";
+import type { ApiResponse } from "./common";
 
 export interface RolePermission {
-  id: number;
-  code: string;
-  module: string;
-  resource: string;
-  action: string;
+  id: number; code: string; module: string; resource: string; action: string;
 }
-
 export interface Role {
-  id: number;
-  code: string;
-  name: string;
-  description: string;
-  landing_page: string;
-  is_active: boolean;
-
-  permissions: RolePermission[];
+  id: number; code: string; name: string;
+  description: string | null; landing_page: string | null; is_active: boolean;
+  permissions?: RolePermission[]; users_count?: number;
 }
-
-export interface RoleListResponse {
-  success: boolean;
-  message: string;
-  data: Role[];
-}
-
-export interface RoleDetailResponse {
-  success: boolean;
-  message: string;
-  data: Role;
-}
-
-// export type RoleResponse = ApiResponse<Role[]>;
-// export interface RoleResponse {
-//   success: boolean;
-//   http_code: number;
-//   request_id: string | null;
-//   message: string;
-//   data: Role[];
-//   errors: unknown;
-//   meta: unknown;
-// }
+export interface RoleCreateRequest { code: string; name: string; description?: string | null }
+export type RoleUpdateRequest = Partial<RoleCreateRequest>;
+export type RoleListResponse = ApiResponse<Role[]>;
+export type RoleDetailResponse = ApiResponse<Role>;
+export type RoleWriteResponse = ApiResponse<Pick<Role, "id" | "code" | "name"> & Partial<Role>>;

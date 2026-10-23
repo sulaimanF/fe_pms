@@ -7,9 +7,10 @@ export default function CreateOutletPage() {
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Create Data Outlet</h1>
 
+      <p role="status">Create Outlet belum tersedia. Form ini belum terhubung ke API.</p>
       <div className="max-w-md">
         <div className="max-w-md rounded-2xl bg-white p-6 shadow-lg">
-          <div className="space-y-4">
+          <fieldset disabled className="space-y-4">
             <select className="w-full rounded-lg border px-3 py-2">
               <option>Jenis</option>
             </select>
@@ -29,7 +30,7 @@ export default function CreateOutletPage() {
             <select className="w-full rounded-lg border px-3 py-2">
               <option>Kecamatan</option>
             </select>
-          </div>
+          </fieldset>
         </div>
 
         <div className="mt-6 flex justify-end gap-4">
@@ -41,7 +42,9 @@ export default function CreateOutletPage() {
           </Link>
 
           <button
-            type="submit"
+            type="button"
+            disabled
+            title="Penyimpanan Outlet belum tersedia"
             className="rounded-lg bg-blue-600 px-8 py-2 text-sm text-white hover:bg-blue-700"
           >
             Save

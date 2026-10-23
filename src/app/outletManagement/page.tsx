@@ -8,7 +8,6 @@ import { useOrganizationUnits } from "@/hooks/useOrganizationUnits";
 import { useAllOutlets } from "@/hooks/useOutlets";
 import OutletManagementSkeleton from "@/components/skeletons/TableSkeleton";
 import { Plus } from "lucide-react";
-import Link from "next/link";
 
 export default function OutletManagementPage() {
 
@@ -24,8 +23,6 @@ export default function OutletManagementPage() {
     isError: organizationError,
   } = useOrganizationUnits();
 
-  console.log("OUTLETS:", outletData);
-  console.log("ORGANIZATIONS:", organizationData);
 
   if (outletLoading || organizationLoading) {
     return <OutletManagementSkeleton />;
@@ -69,15 +66,17 @@ export default function OutletManagementPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Outlet Management</h1>
         <Button
-          asChild
+          disabled
+          title="Create Outlet belum tersedia"
           className="bg-blue-600 hover:bg-blue-700"
         >
-          <Link href="/outletManagement/create">
+          <>
             <Plus className="mr-2 h-4 w-4" />
             Add Outlet
-          </Link>
+          </>
         </Button>
       </div>
+      <p role="status">Create, edit, dan delete Outlet belum tersedia. Daftar di bawah berasal dari backend.</p>
       <WilayahTable data={wilayah} />
 
       <KcTable data={cabang} />

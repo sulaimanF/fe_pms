@@ -2,7 +2,6 @@ import { z } from "zod";
 import type { UserCreateRequest, UserUpdateRequest } from "@/types/userManagement";
 
 const fields = {
-  code: z.string().trim().max(50),
   username: z.string().trim().min(1, "Login ID wajib diisi.").max(100),
   email: z.string().trim().email("Email tidak valid.").max(255),
   full_name: z.string().trim().min(1, "Nama lengkap wajib diisi.").max(255),
@@ -10,7 +9,7 @@ const fields = {
   phone: z.string().trim().max(50, "Phone maksimal 50 karakter."),
   password: z.string(), password_confirmation: z.string(),
   organization_unit_id: z.string().refine((v) => v === "" || (/^[1-9]\d*$/.test(v) && Number.isSafeInteger(Number(v))), "ID organisasi tidak valid."),
-  is_active: z.boolean(), role_ids: z.array(z.number().int().positive()),
+  is_active: z.boolean(), role_ids: z.array(z.number().int().positive()).max(1, "Pilih maksimal satu role untuk user."),
   outlet_ids: z.array(z.number().int().positive()),
 };
 
@@ -39,7 +38,6 @@ export function buildUserCreate(values: CreateUserFormValues): UserCreateRequest
     phone: values.phone || null,
     password: values.password,
     password_confirmation: values.password_confirmation,
-    ...(values.code ? { code: values.code } : {}),
     organization_unit_id: values.organization_unit_id ? Number(values.organization_unit_id) : null,
     is_active: values.is_active,
     role_ids: values.role_ids,

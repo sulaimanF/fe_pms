@@ -84,6 +84,7 @@ export function useSaveUser() {
       try {
         assertWriteAccess();
         if (input.mode === "update" && !isValidEntityId(input.id)) throw new Error("ID user tidak valid.");
+        if (input.payload.role_ids && input.payload.role_ids.length > 1) throw new Error("Pilih maksimal satu role untuk user.");
         for (const ids of [input.payload.role_ids, input.payload.outlet_ids]) {
           if (ids !== undefined && ids.some((id) => !isValidEntityId(id))) throw new Error("ID assignment tidak valid.");
         }

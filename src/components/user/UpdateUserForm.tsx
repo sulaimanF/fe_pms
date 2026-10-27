@@ -23,7 +23,7 @@ import type { UpdateUserFormValues } from "@/validations/userManagementSchema";
 import type { UserManagement } from "@/types/userManagement";
 
 interface Props { user: UserManagement }
-const editableFields = ["code", "username", "email", "full_name", "display_name", "phone", "password", "password_confirmation", "organization_unit_id", "is_active", "role_ids", "outlet_ids"] as const;
+const editableFields = ["username", "email", "full_name", "display_name", "phone", "password", "password_confirmation", "organization_unit_id", "is_active", "role_ids", "outlet_ids"] as const;
 export default function UpdateUserForm({ user }: Props) {
   const router = useRouter();
   const mutation = useUpdateUser();
@@ -35,7 +35,7 @@ export default function UpdateUserForm({ user }: Props) {
   const form = useForm<UpdateUserFormValues>({
     resolver: zodResolver(updateUserSchema),
     defaultValues: {
-      code: user.code ?? "", username: user.username ?? "", email: user.email ?? "", full_name: user.full_name ?? "",
+      username: user.username ?? "", email: user.email ?? "", full_name: user.full_name ?? "",
       display_name: user.display_name ?? "", phone: user.phone ?? "",
       password: "", password_confirmation: "",
       organization_unit_id: user.organization_unit_id ? String(user.organization_unit_id) : "",
@@ -147,12 +147,12 @@ export default function UpdateUserForm({ user }: Props) {
             rolesQuery.error ? <p role="alert">{isForbidden(rolesQuery.error) ? "Akses lookup role ditolak." : "Lookup role gagal dimuat."} <Button type="button" variant="outline" onClick={() => { void rolesQuery.refetch(); }}>Coba lagi</Button></p> :
             !roles.length ? <p role="status">Tidak ada role yang tersedia.</p> : null}
           {!assignmentAccess.allowed && <p role="alert">Assignment role membutuhkan user.update; penyimpanan field user tidak membutuhkan izin tambahan ini.</p>}
-          <UserRolePicker options={roles} selectedIds={selectedRoles}
-            onChange={(ids) => form.setValue("role_ids", ids, { shouldDirty: true })}
+          <UserRolePicker options={roles} currentRoles={user.roles ?? []} selectedIds={selectedRoles}
+            onChange={(ids) => form.setValue("role_ids", ids, { shouldDirty: true, shouldValidate: true })}
             disabled={pending || !rolesReady || !assignmentAccess.allowed || !roles.length}
             invalid={!!form.formState.errors.role_ids} />
           {!!user.roles?.length && <p className="text-sm">Role saat ini: {user.roles.map((role) => role.name).join(", ")}.</p>}
-          <p className="text-sm text-gray-500">Perubahan daftar mengganti assignment sesuai backend; role yang dikirim menjadi aktif. Role yang tidak terlihat dalam lookup tetap dipertahankan.</p>
+          <p className="text-sm text-gray-500">Mengganti role akan mengganti assignment role lama dan peran pada seluruh outlet kelolaan.</p>
           {fieldError("role_ids")}
         </div>
         <label>Outlet Kelolaan</label><div>

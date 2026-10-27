@@ -55,7 +55,6 @@ export interface UserCreateRequest {
   phone?: string | null;
   password: string;
   password_confirmation: string;
-  code?: string;
   organization_unit_id?: number | null;
   is_active?: boolean;
   role_ids: number[];

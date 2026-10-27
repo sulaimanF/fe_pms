@@ -21,7 +21,7 @@ import { applyFormFailure } from "@/lib/managementForm";
 import { buildUserCreate, createUserSchema } from "@/validations/userManagementSchema";
 import type { CreateUserFormValues } from "@/validations/userManagementSchema";
 
-const editableFields = ["code", "username", "email", "full_name", "display_name", "phone", "password", "password_confirmation", "organization_unit_id", "is_active", "role_ids", "outlet_ids"] as const;
+const editableFields = ["username", "email", "full_name", "display_name", "phone", "password", "password_confirmation", "organization_unit_id", "is_active", "role_ids", "outlet_ids"] as const;
 export default function CreateUserForm() {
   const router = useRouter();
   const mutation = useCreateUser();
@@ -33,7 +33,7 @@ export default function CreateUserForm() {
   const form = useForm<CreateUserFormValues>({
     resolver: zodResolver(createUserSchema),
     defaultValues: {
-      code: "", username: "", email: "", full_name: "", display_name: "", phone: "", password: "", password_confirmation: "",
+      username: "", email: "", full_name: "", display_name: "", phone: "", password: "", password_confirmation: "",
       organization_unit_id: "", is_active: true, role_ids: [], outlet_ids: [],
     },
   });
@@ -90,7 +90,6 @@ export default function CreateUserForm() {
       <h1 className="text-2xl font-bold">Create User</h1>
       {form.formState.errors.root?.server && <p role="alert">{form.formState.errors.root.server.message}</p>}
       <fieldset disabled={pending} className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-x-8 gap-y-6">
-        <label htmlFor="user-code">Code (opsional)</label><div><Input id="user-code" {...form.register("code")} />{fieldError("code")}</div>
         <label htmlFor="user-login">Login ID</label><div><Input id="user-login" {...form.register("username")} />{fieldError("username")}</div>
         <label htmlFor="user-email">Email</label><div><Input id="user-email" type="email" {...form.register("email")} />{fieldError("email")}</div>
         <label htmlFor="user-fullname">Full Name</label><div><Input id="user-fullname" {...form.register("full_name")} />{fieldError("full_name")}</div>
@@ -133,10 +132,10 @@ export default function CreateUserForm() {
             !roles.length ? <p role="status">Tidak ada role yang tersedia.</p> : null}
           {!assignmentAccess.allowed && <p role="alert">Assignment role membutuhkan user.update; penyimpanan field user tidak membutuhkan izin tambahan ini.</p>}
           <UserRolePicker options={roles} selectedIds={selectedRoles}
-            onChange={(ids) => form.setValue("role_ids", ids, { shouldDirty: true })}
+            onChange={(ids) => form.setValue("role_ids", ids, { shouldDirty: true, shouldValidate: true })}
             disabled={pending || !rolesReady || !assignmentAccess.allowed || !roles.length}
             invalid={!!form.formState.errors.role_ids} />
-          <p className="text-sm text-gray-500">Perubahan daftar mengganti assignment sesuai backend; role yang dikirim menjadi aktif. Role yang tidak terlihat dalam lookup tetap dipertahankan.</p>
+          <p className="text-sm text-gray-500">Role terpilih berlaku untuk seluruh outlet kelolaan.</p>
           {fieldError("role_ids")}
         </div>
         <label>Outlet Kelolaan</label>

@@ -22,6 +22,8 @@ interface ConfirmDialogsProps {
   loading?: boolean;
   confirmText?: string;
   cancelText?: string;
+  loadingText?: string;
+  closeOnConfirm?: boolean;
 }
 
 export default function ConfirmDialogs({
@@ -31,6 +33,10 @@ export default function ConfirmDialogs({
   description = "Apakah Anda yakin?",
   onConfirm,
   loading,
+  confirmText = "Delete",
+  cancelText = "Cancel",
+  loadingText = "Deleting...",
+  closeOnConfirm = true,
 }: ConfirmDialogsProps) {
   return (
     <AlertDialog
@@ -50,15 +56,18 @@ export default function ConfirmDialogs({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>
-            Cancel
+          <AlertDialogCancel disabled={!closeOnConfirm && loading}>
+            {cancelText}
           </AlertDialogCancel>
 
           <AlertDialogAction
-            onClick={onConfirm}
+            onClick={(event) => {
+              if (!closeOnConfirm) event.preventDefault();
+              onConfirm();
+            }}
             disabled={loading}
           >
-            {loading ? "Deleting..." : "Delete"}
+            {loading ? loadingText : confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

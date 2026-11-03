@@ -34,7 +34,7 @@ export function getSafeRequestError(error: unknown): SafeRequestError {
   return details;
 }
 
-export function logAuthRequestError(operation: "login" | "logout-revocation", error: unknown) {
+export function logAuthRequestError(operation: "login" | "logout-revocation" | "login-rollback-revocation", error: unknown) {
   try {
     console.error("Authentication request failed.", { operation, ...getSafeRequestError(error) });
   } catch {

@@ -27,7 +27,8 @@ export function verifySession(context = captureSession(), rollbackIncompleteLogi
   store.dispatch(prepareSession());
   const promise = (async () => {
     try {
-      const me = await getMe();
+      // Initial-profile failures belong to rollback, including restored incomplete logins.
+      const me = await getMe(rollbackIncompleteLogin ? context : undefined);
       if (!isCurrentSession(context)) return null;
       if (!isMeResponse(me.data)) throw new Error("Incomplete authentication profile.");
       store.dispatch(setAuthData({
@@ -38,12 +39,12 @@ export function verifySession(context = captureSession(), rollbackIncompleteLogi
       setSessionStatus(context, "valid");
     } catch (error: unknown) {
       if (!isCurrentSession(context) || axios.isCancel(error)) return null;
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        await endSession({ reason: "expired", context });
-      } else if (rollbackIncompleteLogin) {
+      if (rollbackIncompleteLogin) {
         // A2: a consumed OTP attempt must recover through a fresh login.
-        const result = await endSession({ reason: "external", context });
+        const result = await endSession({ reason: "login-rollback", context });
         return result ? { rollbackId: result.id } : null;
+      } else if (axios.isAxiosError(error) && error.response?.status === 401) {
+        await endSession({ reason: "expired", context });
       } else {
         setSessionStatus(context, "failed", isForbidden(error) ? "forbidden" : "unavailable");
       }

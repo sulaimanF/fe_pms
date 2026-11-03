@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { AuthResponse, AuthUser, LoginOtpData, AuthMenuGroup, AuthRole } from "@/types/auth";
+import type { AuthenticatedSession, AuthUser, LoginOtpData, AuthMenuGroup, AuthRole } from "@/types/auth";
 
 interface AuthState {
   login: string | null;
@@ -80,10 +80,10 @@ const authSlice = createSlice({
       state.otpVerifyType = action.payload;
     },
 
-    // Simpan token setelah OTP berhasil
+    // Complete the session only after OTP and profile loading succeed.
     setAuthData: (
       state,
-      action: PayloadAction<AuthResponse>
+      action: PayloadAction<AuthenticatedSession>
     ) => {
       state.token = action.payload.token;
       state.token_type = action.payload.token_type;

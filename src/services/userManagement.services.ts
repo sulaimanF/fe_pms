@@ -3,7 +3,7 @@ import api from "@/lib/axios";
 import { assertEntityResponse, collectPages, isValidEntityId } from "@/lib/managementApi";
 import { sameAssignmentIds } from "@/lib/managementForm";
 import type { ApiResponse } from "@/types/common";
-import type { UserCreateRequest, UserUpdateRequest, UserResponse, UserDetailResponse, UserWriteResponse } from "@/types/userManagement";
+import type { UserCreateRequest, UserUpdateRequest, UserResponse, UserDetailResponse, UserWriteResponse, UserDeleteResponse } from "@/types/userManagement";
 
 // The backend changes supplied with this task must be installed before writing.
 export const USER_WRITE_CONTRACT = "user-assignments-v1";
@@ -62,4 +62,18 @@ export const getAllUsers = () => collectPages(getUsers);
 export const getUserById = async (id: number) => assertEntityResponse((await api.get<UserDetailResponse>("/users/" + id)).data);
 export const createUser = async (payload: UserCreateRequest) => assertAtomicUserWrite((await api.post<UserWriteResponse>("/users", payload)).data, payload);
 export const updateUser = async (id: number, payload: UserUpdateRequest) => assertAtomicUserWrite((await api.put<UserWriteResponse>("/users/" + id, payload)).data, payload, id);
+export class UserDeleteResponseError extends Error {
+  constructor() {
+    super("Server belum mengonfirmasi penghapusan user. Periksa daftar sebelum mencoba lagi.");
+    this.name = "UserDeleteResponseError";
+  }
+}
+export const deleteUser = async (id: number): Promise<UserDeleteResponse> => {
+  if (!isValidEntityId(id)) throw new Error("ID user tidak valid.");
+  const response = await api.delete<UserDeleteResponse>("/users/" + id);
+  if (response.status !== 200 || response.data?.success !== true || response.data.http_code !== 200 || response.data.data !== null) {
+    throw new UserDeleteResponseError();
+  }
+  return response.data;
+};
 export const assignUserRoles = async (id: number, roleIds: number[]) => assertEntityResponse((await api.post<UserWriteResponse>("/users/" + id + "/roles", { role_ids: roleIds })).data);

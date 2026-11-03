@@ -6,6 +6,8 @@ export interface SessionContext {
 }
 
 export type SessionStatus = "pending" | "verifying" | "valid" | "invalid" | "failed";
+export type SessionEndReason = "logout" | "expired" | "external" | "login-rollback";
+export type RevocationReason = "logout" | "login-rollback";
 
 interface SessionSnapshot {
   id: number;
@@ -17,8 +19,8 @@ interface SessionSnapshot {
 
 export type SessionEvent =
   | { type: "unauthorized"; context: SessionContext }
-  | { type: "ended"; id: number; reason: "logout" | "expired" | "external"; storageCleared: boolean }
-  | { type: "revocation-failed"; id: number };
+  | { type: "ended"; id: number; reason: SessionEndReason; storageCleared: boolean }
+  | { type: "revocation-result"; id: number; reason: RevocationReason; status: "pending" | "confirmed" | "unconfirmed"; message?: string };
 
 const serverSnapshot: SessionSnapshot = { id: 0, ready: false, ending: false, status: "pending", failure: null };
 let snapshot = serverSnapshot;

@@ -35,8 +35,13 @@ function SessionBoundary({ children }: { children: React.ReactNode }) {
           router.replace("/login");
           if (!event.storageCleared) toast.warning("Sesi lokal berakhir, tetapi penyimpanan sesi gagal dibersihkan.");
           else if (event.reason === "expired") toast.warning("Sesi telah berakhir. Silakan login kembali.");
-        } else {
-          toast.warning("Anda sudah logout lokal. Pencabutan token di server belum dapat dipastikan.");
+          else if (event.reason === "login-rollback") toast.warning("Percobaan login dibatalkan. Silakan login kembali untuk mendapatkan OTP baru.");
+        } else if (event.status === "confirmed" && event.reason === "logout") {
+          toast.success(event.message || "Logged out successfully.");
+        } else if (event.status === "unconfirmed") {
+          toast.warning(event.reason === "login-rollback"
+            ? "Percobaan login sudah dibatalkan secara lokal. Pencabutan token di server belum dapat dipastikan."
+            : "Anda sudah logout lokal. Pencabutan token di server belum dapat dipastikan.");
         }
       }
     });
@@ -63,10 +68,7 @@ function SessionBoundary({ children }: { children: React.ReactNode }) {
         return;
       }
       const incompleteLogin = !external && !(auth.isAuthenticated && auth.token === context.token);
-      const result = await verifySession(context, incompleteLogin);
-      if (active && ownVersion === version && result?.rollbackId === getSessionSnapshot().id) {
-        toast.warning("Data sesi belum dapat dimuat. Silakan coba login kembali.");
-      }
+      await verifySession(context, incompleteLogin);
     };
     // Revalidate restored auth; preserve a pending OTP and reuse an in-memory verified login.
     void synchronize();

@@ -1,12 +1,14 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
-import { UserManagement } from "@/types/userManagement";
-import { Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import type { ColumnDef } from "@tanstack/react-table";
+import type { UserManagement } from "@/types/userManagement";
+import DataTablesActions from "@/components/tables/DataTablesActions";
 
-export const columns = (canEdit: boolean): ColumnDef<UserManagement>[] => [
+export const columns = (
+  onDelete: (user: UserManagement) => void,
+  access: { edit: boolean; delete: boolean },
+  currentUserId: number | undefined,
+): ColumnDef<UserManagement>[] => [
   {
     accessorKey: "username",
     header: "Login ID",
@@ -38,18 +40,13 @@ export const columns = (canEdit: boolean): ColumnDef<UserManagement>[] => [
     id: "actions",
     header: "Actions",
     enableHiding: false,
-    cell: ({ row }) => canEdit ? (
-      <Button
-        asChild
-        variant="ghost"
-        size="icon"
-        title="Edit User"
-      >
-      
-        <Link href={`/userManagement/update/${row.original.id}`}>
-          <Pencil className="h-4 w-4 cursor-pointer" />
-        </Link>
-      </Button>
-    ) : null,
+    cell: ({ row }) => (
+      <DataTablesActions
+        row={row.original}
+        variant="inline"
+        editHref={access.edit ? `/userManagement/update/${row.original.id}` : undefined}
+        onDelete={access.delete && currentUserId !== undefined && row.original.id !== currentUserId ? onDelete : undefined}
+      />
+    ),
   }
 ];

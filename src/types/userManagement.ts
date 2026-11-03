@@ -64,4 +64,5 @@ export type UserUpdateRequest = Partial<UserCreateRequest>;
 export interface Pagination { per_page: number; current_page: number; total: number; last_page: number }
 export type UserResponse = ApiResponse<UserManagement[]>;
 export type UserDetailResponse = ApiResponse<UserManagement>;
+export type UserDeleteResponse = ApiResponse<null>;
 export type UserWriteResponse = ApiResponse<Pick<UserManagement, "id" | "username" | "email" | "full_name"> & Partial<UserManagement>>;

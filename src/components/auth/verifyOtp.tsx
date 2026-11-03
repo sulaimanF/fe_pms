@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { captureSession, isCurrentSession, setSessionStatus } from "@/lib/session";
 import type { SessionContext } from "@/lib/session";
-import { acceptSessionCredentials, endSession } from "@/lib/sessionLifecycle";
+import { acceptSessionCredentials, endSession, revokeLoginAttempt } from "@/lib/sessionLifecycle";
 import { persistor } from "@/store/store";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
@@ -18,9 +18,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { setAuthData, setResendOtpData } from "@/store/slices/authSlice";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { otpSchema, OtpFormData } from "@/validations/otpSchema";
-import type { AuthResponse, LoginResponse } from "@/types/auth";
+import type { OtpVerificationResponse, LoginResponse } from "@/types/auth";
 import type { ApiResponse } from "@/types/common";
-import { getMe } from "@/services/auth.services";
+import { getMe, readOtpCredentials } from "@/services/auth.services";
 import { isMeResponse } from "@/lib/sessionVerification";
 
 type LoginStage = "idle" | "verifying" | "loading-profile" | "authenticated" | "failed";
@@ -102,6 +102,8 @@ export default function OtpForm() {
 
     requestInFlight.current = true;
     let profileSession: SessionContext | null = null;
+    let issuedToken: string | null = null;
+    let otpResponseReceived = false;
     let authenticated = false;
     setLoading(true);
     setStage("verifying");
@@ -124,14 +126,20 @@ export default function OtpForm() {
               login: login!,
             };
 
-      const response = await api.post<ApiResponse<AuthResponse>>(
+      const response = await api.post<ApiResponse<OtpVerificationResponse>>(
         verifyEndpoint,
         payload,
         { sessionContext: context }
       );
 
+      // Capture a received token even if validation or component ownership fails.
+      otpResponseReceived = true;
+      const candidate = response.data?.data?.token;
+      issuedToken = typeof candidate === "string" && candidate.trim() ? candidate : null;
+      const authData = readOtpCredentials(response.data);
       if (!mounted.current || !isCurrentSession(context)) return;
-      const authData = response.data.data;
+      // acceptSessionCredentials now owns revocation if adoption fails.
+      issuedToken = null;
       const nextSession = await acceptSessionCredentials(context, authData.token, authData.token_type);
       if (!nextSession) return;
       context = nextSession;
@@ -167,7 +175,7 @@ export default function OtpForm() {
 
     } catch (error) {
       // Profile failures are handled by the rollback below, not as retryable OTP errors.
-      if (profileSession) return;
+      if (profileSession || otpResponseReceived) return;
       if (!mounted.current || !isCurrentSession(context) || axios.isCancel(error)) return;
       if (axios.isAxiosError(error)) {
         toast.error(
@@ -185,7 +193,17 @@ export default function OtpForm() {
             setStage("failed");
             toast.error("Verifikasi OTP berhasil, tetapi data akun gagal dimuat. Silakan login kembali untuk mendapatkan OTP baru.");
           }
-          await endSession({ reason: "external", context: profileSession });
+          await endSession({ reason: "login-rollback", context: profileSession });
+        } else if (issuedToken) {
+          if (mounted.current && isCurrentSession(context)) {
+            toast.error("Respons verifikasi login tidak dapat digunakan. Silakan login kembali untuk mendapatkan OTP baru.");
+            await endSession({ reason: "login-rollback", context, rollbackToken: issuedToken });
+          } else {
+            void revokeLoginAttempt(issuedToken, context.id);
+          }
+        } else if (otpResponseReceived && !authenticated && isCurrentSession(context)) {
+          // An unusable successful OTP response may already have consumed the code.
+          await endSession({ reason: "login-rollback", context });
         }
       } finally {
         requestInFlight.current = false;

@@ -29,13 +29,13 @@ export interface AuthOrganizationUnit {
 }
 
 // user
-export interface AuthUser {
+export interface AuthUserBase {
   id: number;
-  code: string;
+  code: string | null;
   username: string;
   email: string;
   full_name: string;
-  display_name: string;
+  display_name: string | null;
   avatar_url: string | null;
   phone: string | null;
   organization_unit_id: number | null;
@@ -47,18 +47,24 @@ export interface AuthUser {
   created_at: string;
   updated_at: string;
 
+}
+
+// Relations loaded by /auth/me, not guaranteed on an OTP response.
+export interface AuthUser extends AuthUserBase {
   roles: AuthRole[];
   organization_unit: AuthOrganizationUnit | null;
 }
 
-// 
-export interface AuthResponse {
+export interface OtpVerificationResponse {
   token: string;
   token_type: string;
-  user: AuthUser;
-  roles: AuthRole[];
-  permissions: string[];
-  menu: AuthMenuGroup[];
+  user: AuthUserBase;
+}
+
+// Internal Redux payload, assembled only after /auth/me succeeds.
+export interface AuthenticatedSession extends MeResponse {
+  token: string;
+  token_type: string;
 }
 
 export interface ResendOtpRequest {

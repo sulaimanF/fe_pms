@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
-import { getAllUsers, createUser, updateUser, verifyUserWriteContract, UserWriteContractError } from "@/services/userManagement.services";
+import { getAllUsers, createUser, updateUser, deleteUser, verifyUserWriteContract, UserWriteContractError, UserDeleteResponseError } from "@/services/userManagement.services";
 import { getUserById } from "@/services/userManagement.services";
 import { useSessionQuery } from "@/hooks/useAuth";
 import { sessionQueryKey } from "@/lib/queryClient";
@@ -12,6 +12,7 @@ import { verifySession } from "@/lib/sessionVerification";
 import { ACCESS, assertAccess } from "@/lib/authorization";
 import { useAuthorization } from "@/hooks/useAuthorization";
 import { getAllOutlets } from "@/services/outlet.service";
+import axios from "axios";
 
 export const useUsers = () => {
   const session = useSessionQuery();
@@ -40,6 +41,53 @@ export const useUser = (id: number) => {
     enabled: session.enabled && access.allowed && isValidEntityId(id),
   });
 };
+
+export function useDeleteUser() {
+  const session = useSessionQuery();
+  const client = useQueryClient();
+  const busy = useRef(false);
+  const refresh = async (id: number, deleted: boolean) => {
+    try { assertSession(session.id); } catch { return; }
+    const detailKey = sessionQueryKey(session.id, "user", id);
+    if (deleted) {
+      await client.cancelQueries({ queryKey: detailKey, exact: true });
+      try { assertSession(session.id); } catch { return; }
+      client.removeQueries({ queryKey: detailKey, exact: true });
+    }
+    await Promise.all([
+      client.invalidateQueries({ queryKey: sessionQueryKey(session.id, "users") }),
+      client.invalidateQueries({ queryKey: sessionQueryKey(session.id, "roles") }),
+      ...(!deleted ? [client.invalidateQueries({ queryKey: detailKey, exact: true })] : []),
+    ]);
+  };
+  const mutation = useMutation({
+    mutationKey: sessionQueryKey(session.id, "delete-user"), meta: session.meta, retry: false, gcTime: 0,
+    mutationFn: (id: number) => requestInSession(session.id, () => {
+      assertAccess(session.id, ACCESS.userDelete);
+      if (!isValidEntityId(id)) throw new Error("ID user tidak valid.");
+      if (store.getState().auth.user?.id === id) throw new Error("Anda tidak dapat menghapus akun sendiri.");
+      return deleteUser(id);
+    }),
+    onSuccess: async (_response, id) => { await refresh(id, true); },
+    onError: async (error, id) => {
+      if (axios.isCancel(error)) return;
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      if (error instanceof UserDeleteResponseError ||
+        (axios.isAxiosError(error) && (!error.response || status === 404 || (status !== undefined && status >= 500)))) {
+        // A lost response can follow a committed delete; reconcile without retrying DELETE.
+        await refresh(id, status === 404);
+      }
+    },
+  });
+  return {
+    isPending: mutation.isPending,
+    mutateAsync: async (id: number) => {
+      if (busy.current) throw new Error("Penghapusan sedang berlangsung.");
+      busy.current = true;
+      try { return await mutation.mutateAsync(id); } finally { busy.current = false; }
+    },
+  };
+}
 
 export const useUserOutletOptions = () => {
   const session = useSessionQuery();

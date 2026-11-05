@@ -9,11 +9,15 @@ import { Button } from "@/components/ui/button";
 import { useDeleteRole, useRoles } from "@/hooks/useRoles";
 import TableSkeletons from "@/components/skeletons/TableSkeleton";
 import ConfirmDialogs from "@/components/dialogs/ConfirmDialogs";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AccessGuard, AccessDenied } from "@/components/auth/AccessGuard";
 import { ACCESS, canAccess, isForbidden } from "@/lib/authorization";
 import { useAuthorization } from "@/hooks/useAuthorization";
 import { toast } from "sonner";
+import axios from "axios";
+import { captureSession, isCurrentSession } from "@/lib/session";
+import { isValidEntityId } from "@/lib/managementApi";
+import type { Role } from "@/types/role";
 
 
 export default function RoleManagementPage() {
@@ -22,32 +26,44 @@ export default function RoleManagementPage() {
 
 function RoleManagementContent() {
   const access = useAuthorization();
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedRole, setSelectedRole] = useState<(Pick<Role, "id" | "name" | "is_system"> & { sessionId: number }) | null>(null);
   const deleteRoleMutation = useDeleteRole();
-  const handleDelete = (id: number) => {
+  const deleting = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const handleDelete = (role: Role) => {
+    if (deleteRoleMutation.isPending) return;
     if (!canAccess(ACCESS.roleDelete)) {
       toast.error("Anda tidak memiliki izin untuk menghapus role.");
       return;
     }
-    setSelectedId(id);
-    setOpenDialog(true);
+    if (!isValidEntityId(role.id) || role.is_system !== false) {
+      toast.error("Role tidak valid atau merupakan system Role yang tidak dapat dihapus."); return;
+    }
+    setSelectedRole({ id: role.id, name: role.name, is_system: role.is_system, sessionId: captureSession().id });
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
+    if (!selectedRole || deleting.current || deleteRoleMutation.isPending) return;
+    const context = captureSession();
+    if (!isCurrentSession(context) || context.id !== selectedRole.sessionId) return;
     if (!canAccess(ACCESS.roleDelete)) {
-      setOpenDialog(false);
+      setSelectedRole(null);
       toast.error("Anda tidak memiliki izin untuk menghapus role.");
       return;
     }
-    if (!selectedId || deleteRoleMutation.isPending) return;
-
-    deleteRoleMutation.mutate(selectedId, {
-      onSuccess: () => {
-        setOpenDialog(false);
-        setSelectedId(null);
-      },
-    });
+    if (!isValidEntityId(selectedRole.id) || selectedRole.is_system !== false) {
+      setSelectedRole(null);
+      toast.error("Role tidak valid atau merupakan system Role yang tidak dapat dihapus."); return;
+    }
+    deleting.current = true;
+    try {
+      await deleteRoleMutation.mutateAsync({ id: selectedRole.id, is_system: selectedRole.is_system });
+      if (mounted.current && isCurrentSession(context)) setSelectedRole(null);
+    } catch (error: unknown) {
+      // The hook owns feedback, including when profile verification unmounts this page.
+      if (mounted.current && isCurrentSession(context) && axios.isAxiosError(error) && error.response?.status === 404) setSelectedRole(null);
+    } finally { deleting.current = false; }
   };
   
   const {
@@ -65,6 +81,7 @@ function RoleManagementContent() {
     columns: columns(handleDelete, {
       edit: access.can(ACCESS.roleUpdate),
       delete: access.can(ACCESS.roleDelete),
+      deleting: deleteRoleMutation.isPending,
     }),
   });
 
@@ -107,11 +124,17 @@ function RoleManagementContent() {
       />
 
       <ConfirmDialogs
-        open={openDialog && access.can(ACCESS.roleDelete)}
-        onOpenChange={setOpenDialog}
-        title="Delete Role"
-        description="Are you sure you want to delete this role?"
-        onConfirm={confirmDelete}
+        open={!!selectedRole && selectedRole.sessionId === captureSession().id && access.can(ACCESS.roleDelete)}
+        onOpenChange={(open) => {
+          if (!open && !deleting.current && !deleteRoleMutation.isPending) setSelectedRole(null);
+        }}
+        title="Hapus Role?"
+        description={`Apakah Anda yakin ingin menghapus role "${selectedRole?.name ?? ""}"?`}
+        confirmText="Hapus"
+        cancelText="Tidak"
+        loadingText="Menghapus..."
+        closeOnConfirm={false}
+        onConfirm={() => { void confirmDelete(); }}
         loading={deleteRoleMutation.isPending}
       />
     </>

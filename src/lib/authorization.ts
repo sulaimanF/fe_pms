@@ -11,6 +11,7 @@ export const ACCESS = {
   roleUpdate: ["role.view", "role.update"],
   roleDelete: ["role.delete"],
   roleAssignPermissions: ["role.update"],
+  roleAssignMenus: ["role.update"],
   userList: ["user.viewAny"],
   userDetail: ["user.view"],
   userCreate: ["user.create"],
@@ -18,6 +19,7 @@ export const ACCESS = {
   userUpdate: ["user.view", "user.update"],
   userDelete: ["user.delete"],
   permissionCatalog: ["permission.viewAny"],
+  menuCatalog: ["menu.viewAny"],
 } as const;
 
 export type PermissionCode = typeof ACCESS[keyof typeof ACCESS][number];

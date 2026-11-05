@@ -24,9 +24,10 @@ export function readRequestFailure(error: unknown): RequestFailure {
   return failure;
 }
 export class PartialSaveError extends Error {
-  constructor(public readonly entityId: number, public readonly phase: "permissions" | "roles", public readonly failure: RequestFailure) {
-    super(failure.status === 403 ? "Data utama tersimpan, tetapi akses assignment ditolak (403). Tidak ada logout otomatis." :
-      "Data utama tersimpan, tetapi assignment belum tersimpan. Ulangi assignment tanpa membuat entity baru.");
+  constructor(public readonly entityId: number, public readonly phase: "permissions" | "roles" | "menus", public readonly failure: RequestFailure,
+    public readonly pendingPhases: readonly ("permissions" | "roles" | "menus")[] = [phase]) {
+    super(failure.status === 403 ? "Data utama tersimpan, tetapi akses assignment ditolak (403). Periksa tahap yang belum selesai; tidak ada logout otomatis." :
+      "Data utama tersimpan, tetapi hasil assignment belum seluruhnya dikonfirmasi. Retry hanya mengulang tahap yang belum selesai.");
     this.name = "PartialSaveError";
   }
 }

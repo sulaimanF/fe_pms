@@ -1,3 +1,5 @@
+import type { ApiResponse } from "./common";
+
 export interface Menu {
   id: number;
   parent_id: number | null;
@@ -34,3 +36,17 @@ export interface MenuTreeResponse {
   message: string;
   data: MenuTree[];
 }
+// GET /menus is a paginated flat catalog, distinct from the caller's sidebar tree.
+export interface MenuCatalogItem {
+  id: number;
+  parent_id: number | null;
+  code: string;
+  label: string;
+  icon: string | null;
+  route_name: string | null;
+  route_path: string | null;
+  menu_type: "group" | "item" | "divider";
+  sort_order: number;
+  is_active: boolean;
+}
+export type MenuCatalogResponse = ApiResponse<MenuCatalogItem[]>;

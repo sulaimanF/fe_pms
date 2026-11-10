@@ -66,3 +66,30 @@ export type UserResponse = ApiResponse<UserManagement[]>;
 export type UserDetailResponse = ApiResponse<UserManagement>;
 export type UserDeleteResponse = ApiResponse<null>;
 export type UserWriteResponse = ApiResponse<Pick<UserManagement, "id" | "username" | "email" | "full_name"> & Partial<UserManagement>>;
+
+export interface UserPermissionOverride {
+  permission_id: number;
+  code: string;
+  module: string;
+  resource: string;
+  action: string;
+  is_active: boolean;
+  granted: boolean;
+  reason: string | null;
+  granted_at: string;
+  granted_by: number | null;
+  expires_at: string | null;
+}
+export interface UserPermissionCreateRequest {
+  permission_id: number;
+  granted: boolean;
+  reason: string | null;
+  expires_at: string | null;
+}
+export type UserPermissionUpdateRequest = Partial<Omit<UserPermissionCreateRequest, "permission_id">>;
+export type UserPermissionsResponse = ApiResponse<UserPermissionOverride[]>;
+export type UserPermissionResponse = ApiResponse<UserPermissionOverride>;
+export type UserPermissionMutation =
+  | { kind: "create"; payload: UserPermissionCreateRequest }
+  | { kind: "update"; permissionId: number; payload: UserPermissionUpdateRequest }
+  | { kind: "delete"; permissionId: number };

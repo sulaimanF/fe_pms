@@ -2,11 +2,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 import { getAllUsers, createUser, updateUser, deleteUser, verifyUserWriteContract, UserWriteContractError, UserDeleteResponseError } from "@/services/userManagement.services";
 import { getUserById } from "@/services/userManagement.services";
+import { getUserPermissions, createUserPermission, updateUserPermission, deleteUserPermission } from "@/services/userManagement.services";
 import { useSessionQuery } from "@/hooks/useAuth";
 import { sessionQueryKey } from "@/lib/queryClient";
 import { requestInSession, assertSession } from "@/lib/session";
 import { isValidEntityId } from "@/lib/managementApi";
 import type { UserCreateRequest, UserUpdateRequest } from "@/types/userManagement";
+import type { UserPermissionMutation, UserPermissionsResponse, UserPermissionResponse } from "@/types/userManagement";
+import type { ApiResponse } from "@/types/common";
+import { userPermissionCreateRequestSchema, userPermissionUpdateRequestSchema } from "@/validations/userPermissionSchema";
 import { store } from "@/store/store";
 import { verifySession } from "@/lib/sessionVerification";
 import { ACCESS, assertAccess } from "@/lib/authorization";
@@ -50,9 +54,13 @@ export function useDeleteUser() {
     try { assertSession(session.id); } catch { return; }
     const detailKey = sessionQueryKey(session.id, "user", id);
     if (deleted) {
-      await client.cancelQueries({ queryKey: detailKey, exact: true });
+      await Promise.all([
+        client.cancelQueries({ queryKey: detailKey, exact: true }),
+        client.cancelQueries({ queryKey: sessionQueryKey(session.id, "user-permissions", id), exact: true }),
+      ]);
       try { assertSession(session.id); } catch { return; }
       client.removeQueries({ queryKey: detailKey, exact: true });
+      client.removeQueries({ queryKey: sessionQueryKey(session.id, "user-permissions", id), exact: true });
     }
     await Promise.all([
       client.invalidateQueries({ queryKey: sessionQueryKey(session.id, "users") }),
@@ -174,5 +182,70 @@ export function useUpdateUser() {
     isPending: mutation.isPending,
     mutateAsync: (input: Omit<Extract<SaveUserInput, { mode: "update" }>, "mode">) =>
       mutation.mutateAsync({ ...input, mode: "update" }),
+  };
+}
+
+export function useUserPermissions(userId: number, enabled = true) {
+  const session = useSessionQuery();
+  const access = useAuthorization(ACCESS.userDetail);
+  return useQuery({
+    ...session,
+    queryKey: sessionQueryKey(session.id, "user-permissions", userId),
+    queryFn: ({ signal }) => requestInSession(session.id, () => {
+      assertAccess(session.id, ACCESS.userDetail);
+      return getUserPermissions(userId, signal);
+    }),
+    enabled: enabled && session.enabled && access.allowed && isValidEntityId(userId),
+  });
+}
+
+export function useMutateUserPermission(userId: number) {
+  const session = useSessionQuery();
+  const client = useQueryClient();
+  const busy = useRef(false);
+  const key = sessionQueryKey(session.id, "user-permissions", userId);
+  const mutation = useMutation({
+    mutationKey: sessionQueryKey(session.id, "write-user-permission", userId),
+    meta: session.meta, retry: false, gcTime: 0,
+    mutationFn: (input: UserPermissionMutation) => requestInSession<UserPermissionResponse | ApiResponse<null>>(session.id, () => {
+      assertAccess(session.id, ACCESS.userManagePermissions);
+      if (!isValidEntityId(userId)) throw new Error("ID User tidak valid.");
+      if (store.getState().auth.user?.id === userId) throw new Error("Permission khusus akun sendiri tidak boleh diubah.");
+      if (input.kind === "create") return createUserPermission(userId, userPermissionCreateRequestSchema.parse(input.payload));
+      if (!isValidEntityId(input.permissionId)) throw new Error("ID permission tidak valid.");
+      if (input.kind === "delete") return deleteUserPermission(userId, input.permissionId);
+      const payload = userPermissionUpdateRequestSchema.parse(input.payload);
+      if (!Object.keys(payload).length) throw new Error("Tidak ada perubahan permission untuk disimpan.");
+      return updateUserPermission(userId, input.permissionId, payload);
+    }),
+    onSuccess: async (response, input) => {
+      try {
+        assertSession(session.id);
+        // Stop an older read from replacing this confirmed write.
+        await client.cancelQueries({ queryKey: key, exact: true });
+        assertSession(session.id);
+        const row = response.data;
+        client.setQueryData<UserPermissionsResponse>(key, (previous) => {
+          if (!previous) return previous;
+          const permissionId = input.kind === "create" ? input.payload.permission_id : input.permissionId;
+          const rows = previous.data.filter((item) => item.permission_id !== permissionId);
+          return { ...previous, data: input.kind === "delete" || !row ? rows : [...rows, row].sort((a, b) => a.code.localeCompare(b.code)) };
+        });
+        await client.invalidateQueries({ queryKey: key, exact: true, refetchType: "none" });
+      } catch {
+        // A confirmed write must not become a reported save failure because of cache refresh.
+      }
+    },
+    onError: async () => {
+      try { assertSession(session.id); await client.invalidateQueries({ queryKey: key, exact: true, refetchType: "none" }); } catch { return; }
+    },
+  });
+  return {
+    isPending: mutation.isPending,
+    mutateAsync: async (input: UserPermissionMutation) => {
+      if (busy.current) throw new axios.CanceledError("Perubahan permission sedang berlangsung.");
+      busy.current = true;
+      try { return await mutation.mutateAsync(input); } finally { busy.current = false; }
+    },
   };
 }

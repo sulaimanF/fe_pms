@@ -20,6 +20,7 @@ import { captureSession, isCurrentSession } from "@/lib/session";
 import { isValidEntityId } from "@/lib/managementApi";
 import { UserDeleteResponseError } from "@/services/userManagement.services";
 import type { UserManagement } from "@/types/userManagement";
+import UserPermissionsDialog from "@/components/user/UserPermissionsDialog";
 
 export default function UserManagementPage() {
   return <AccessGuard permissions={ACCESS.userList}><UserManagementContent /></AccessGuard>;
@@ -29,10 +30,20 @@ function UserManagementContent() {
   const access = useAuthorization();
   const currentUserId = useAppSelector((state) => state.auth.user?.id);
   const [selectedUser, setSelectedUser] = useState<(Pick<UserManagement, "id" | "username"> & { sessionId: number }) | null>(null);
+  const [permissionUser, setPermissionUser] = useState<(Pick<UserManagement, "id" | "username"> & { sessionId: number }) | null>(null);
   const deleteMutation = useDeleteUser();
   const deleting = useRef(false);
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const handlePermissions = (user: UserManagement) => {
+    if (!canAccess(ACCESS.userDetail) || !canAccess(ACCESS.userManagePermissions)) {
+      toast.error("Akses permission khusus memerlukan user.view dan user.managePermission."); return;
+    }
+    if (!isValidEntityId(user.id) || currentUserId === undefined || user.id === currentUserId) {
+      toast.error("Target tidak valid atau merupakan akun Anda sendiri."); return;
+    }
+    setPermissionUser({ id: user.id, username: user.username, sessionId: captureSession().id });
+  };
   const handleDelete = (user: UserManagement) => {
     if (deleteMutation.isPending) return;
     if (!canAccess(ACCESS.userDelete)) {
@@ -92,7 +103,8 @@ function UserManagementContent() {
     data: data?.data ?? [],
     columns: columns(handleDelete, {
       edit: access.can(ACCESS.userUpdate), delete: access.can(ACCESS.userDelete),
-    }, currentUserId),
+      permissions: access.can(ACCESS.userDetail) && access.can(ACCESS.userManagePermissions),
+    }, currentUserId, handlePermissions),
   });
 
   if (isLoading) {
@@ -132,6 +144,9 @@ function UserManagementContent() {
         </div>
       }
     />
+    {permissionUser && permissionUser.sessionId === captureSession().id && access.can(ACCESS.userDetail) && access.can(ACCESS.userManagePermissions) && (
+      <UserPermissionsDialog key={`${permissionUser.sessionId}:${permissionUser.id}`} user={permissionUser} onClose={() => setPermissionUser(null)} />
+    )}
     <ConfirmDialogs
       open={!!selectedUser && selectedUser.sessionId === captureSession().id && access.can(ACCESS.userDelete)}
       onOpenChange={(open) => {

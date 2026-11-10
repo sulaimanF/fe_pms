@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Pencil, Trash2, MoreHorizontal } from "lucide-react";
+import { Eye, Pencil, Trash2, MoreHorizontal, UserKey } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -19,6 +19,7 @@ interface DataTablesActionsProps<TData> {
   onView?: (row: TData) => void;
   onEdit?: (row: TData) => void;
   onDelete?: (row: TData) => void;
+  onPermissions?: (row: TData) => void;
 }
 
 export default function DataTablesActions<TData>({
@@ -29,6 +30,7 @@ export default function DataTablesActions<TData>({
   onView,
   onEdit,
   onDelete,
+  onPermissions,
 }: DataTablesActionsProps<TData>) {
   if (unavailable) return <div className="flex items-center gap-1"><Button disabled variant="ghost" size="icon" title="Edit belum tersedia"><Pencil className="h-4 w-4" /></Button><Button disabled variant="ghost" size="icon" title="Delete belum tersedia"><Trash2 className="h-4 w-4" /></Button><span className="text-xs text-gray-500">Belum tersedia</span></div>;
 
@@ -77,6 +79,18 @@ export default function DataTablesActions<TData>({
           onClick={() => onDelete(row)}
         >
           <Trash2 className="h-4 w-4 text-red-600 hover:text-red-700" />
+        </Button>
+      )}
+      {onPermissions && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          title="Kelola Permission Khusus"
+          aria-label="Kelola Permission Khusus"
+          onClick={() => onPermissions(row)}
+        >
+          <UserKey className="h-4 w-4 text-violet-600 hover:text-violet-700" />
         </Button>
       )}
     </div>
@@ -130,6 +144,12 @@ export default function DataTablesActions<TData>({
           >
             <Trash2 className="mr-2 h-4 w-4 text-red-600" />
             Delete
+          </DropdownMenuItem>
+        )}
+        {onPermissions && (
+          <DropdownMenuItem onClick={() => onPermissions(row)}>
+            <UserKey className="mr-2 h-4 w-4 text-violet-600" />
+            Kelola Permission Khusus
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>

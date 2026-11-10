@@ -18,6 +18,7 @@ export const ACCESS = {
   userAssignRoles: ["user.update"],
   userUpdate: ["user.view", "user.update"],
   userDelete: ["user.delete"],
+  userManagePermissions: ["user.managePermission"],
   permissionCatalog: ["permission.viewAny"],
   menuCatalog: ["menu.viewAny"],
 } as const;

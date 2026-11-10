@@ -6,8 +6,9 @@ import DataTablesActions from "@/components/tables/DataTablesActions";
 
 export const columns = (
   onDelete: (user: UserManagement) => void,
-  access: { edit: boolean; delete: boolean },
+  access: { edit: boolean; delete: boolean; permissions: boolean },
   currentUserId: number | undefined,
+  onPermissions: (user: UserManagement) => void,
 ): ColumnDef<UserManagement>[] => [
   {
     accessorKey: "username",
@@ -46,6 +47,7 @@ export const columns = (
         variant="inline"
         editHref={access.edit ? `/userManagement/update/${row.original.id}` : undefined}
         onDelete={access.delete && currentUserId !== undefined && row.original.id !== currentUserId ? onDelete : undefined}
+        onPermissions={access.permissions && currentUserId !== undefined && row.original.id !== currentUserId ? onPermissions : undefined}
       />
     ),
   }

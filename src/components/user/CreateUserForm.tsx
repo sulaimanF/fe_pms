@@ -90,16 +90,16 @@ export default function CreateUserForm() {
       <h1 className="text-2xl font-bold">Create User</h1>
       {form.formState.errors.root?.server && <p role="alert">{form.formState.errors.root.server.message}</p>}
       <fieldset disabled={pending} className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-x-8 gap-y-6">
-        <label htmlFor="user-login">Login ID</label><div><Input id="user-login" {...form.register("username")} />{fieldError("username")}</div>
-        <label htmlFor="user-email">Email</label><div><Input id="user-email" type="email" {...form.register("email")} />{fieldError("email")}</div>
-        <label htmlFor="user-fullname">Full Name</label><div><Input id="user-fullname" {...form.register("full_name")} />{fieldError("full_name")}</div>
-        <label htmlFor="user-displayname">Display Name (opsional)</label><div><Input id="user-displayname" maxLength={255} {...form.register("display_name")} />{fieldError("display_name")}</div>
-        <label htmlFor="user-phone">Phone (opsional)</label><div><Input id="user-phone" type="tel" maxLength={50} {...form.register("phone")} />{fieldError("phone")}</div>
-        <label htmlFor="user-password">Password</label>
+        <label htmlFor="user-login">Login ID<span className="text-red-500">*</span></label><div><Input id="user-login" {...form.register("username")} />{fieldError("username")}</div>
+        <label htmlFor="user-email">Email <span className="text-red-500">*</span></label><div><Input id="user-email" type="email" {...form.register("email")} />{fieldError("email")}</div>
+        <label htmlFor="user-fullname">Full Name<span className="text-red-500">*</span></label><div><Input id="user-fullname" {...form.register("full_name")} />{fieldError("full_name")}</div>
+        <label htmlFor="user-displayname">Display Name</label><div><Input id="user-displayname" maxLength={255} {...form.register("display_name")} />{fieldError("display_name")}</div>
+        <label htmlFor="user-phone">Phone</label><div><Input id="user-phone" type="tel" maxLength={50} {...form.register("phone")} />{fieldError("phone")}</div>
+        <label htmlFor="user-password">Password <span className="text-red-500">*</span></label>
         <div><Input id="user-password" type="password" autoComplete="new-password" {...form.register("password")} />{fieldError("password")}</div>
-        <label htmlFor="user-confirmation">Konfirmasi Password</label>
+        <label htmlFor="user-confirmation">Konfirmasi Password <span className="text-red-500">*</span></label>
         <div><Input id="user-confirmation" type="password" autoComplete="new-password" {...form.register("password_confirmation")} />{fieldError("password_confirmation")}</div>
-        <label>Organisasi</label>
+        <label>Organisasi <span className="text-red-500">*</span></label>
         <div>
           {organizationsQuery.isLoading ? <p role="status">Memuat seluruh organisasi...</p> :
             organizationsQuery.error ? <p role="alert">{isForbidden(organizationsQuery.error) ? "Akses lookup organisasi ditolak." : "Lookup organisasi gagal dimuat."} <Button type="button" variant="outline" onClick={() => { void organizationsQuery.refetch(); }}>Coba lagi</Button></p> :
@@ -115,7 +115,7 @@ export default function CreateUserForm() {
           )} />
           {fieldError("organization_unit_id")}
         </div>
-        <label>Status</label><div><Controller control={form.control} name="is_active" render={({ field }) => (
+        <label>Status <span className="text-red-500">*</span></label><div><Controller control={form.control} name="is_active" render={({ field }) => (
           <Select value={field.value ? "active" : "inactive"} onValueChange={(value) => field.onChange(value === "active")}>
             <SelectTrigger aria-label="Status" className="w-full"><SelectValue /></SelectTrigger><SelectContent>
               <SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem>
@@ -124,7 +124,7 @@ export default function CreateUserForm() {
         )} />{fieldError("is_active")}</div>
       </fieldset>
       <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-x-8 gap-y-6">
-        <label htmlFor="user-roles">Role</label>
+        <label htmlFor="user-roles">Role <span className="text-red-500">*</span></label>
         <div className="min-w-0 space-y-3">
           {!roleAccess.allowed ? <p role="alert">Izin role.viewAny diperlukan untuk lookup role. Assignment yang tidak diedit tetap dipertahankan.</p> :
             rolesQuery.isLoading ? <p role="status">Memuat seluruh role...</p> :
@@ -138,7 +138,7 @@ export default function CreateUserForm() {
           <p className="text-sm text-gray-500">Role terpilih berlaku untuk seluruh outlet kelolaan.</p>
           {fieldError("role_ids")}
         </div>
-        <label>Outlet Kelolaan</label>
+        <label>Outlet Kelolaan <span className="text-red-500">*</span></label>
         <div>
           <UserOutletPicker selectedIds={selectedOutlets} onChange={(ids) => form.setValue("outlet_ids", ids, { shouldDirty: true })}
             options={outlets} isLoading={outletsQuery.isLoading} error={outletsQuery.error}

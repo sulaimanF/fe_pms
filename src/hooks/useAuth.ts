@@ -26,5 +26,5 @@ export const useLogout = () => {
     gcTime: 0,
     retry: false,
   });
-  return { ...mutation, isPending: mutation.isPending || session.ending };
+  return { ...mutation, isPending: mutation.isPending || session.ending || !!session.logout };
 };

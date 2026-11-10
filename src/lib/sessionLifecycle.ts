@@ -3,8 +3,9 @@ import { cancelSessionQueries, removeSessionCache } from "@/lib/queryClient";
 import {
   beginSessionEnd, captureSession, emitSessionEvent, finishSessionEnd,
   getSessionSnapshot, initializeSession, isCurrentSession, readStoredToken,
+  startLogout, finishLogout,
 } from "@/lib/session";
-import type { RevocationReason, SessionContext, SessionEndReason } from "@/lib/session";
+import type { LogoutOutcome, RevocationReason, SessionContext, SessionEndReason } from "@/lib/session";
 import { logout as revokeToken } from "@/services/auth.services";
 import { logout, prepareSession } from "@/store/slices/authSlice";
 import { clearPersistedSession, store } from "@/store/store";
@@ -25,7 +26,7 @@ interface EndSessionResult {
 let cleanup: Promise<EndSessionResult> | null = null;
 let cleanupOwnerId: number | null = null;
 let cleanupTransitionId: number | null = null;
-const revocations = new Map<string, Promise<void>>();
+const revocations = new Map<string, Promise<LogoutOutcome>>();
 
 function canRetryRevocation(error: unknown) {
   if (!axios.isAxiosError(error) || axios.isCancel(error)) return false;
@@ -34,16 +35,16 @@ function canRetryRevocation(error: unknown) {
     (!error.response && ["ERR_NETWORK", "ECONNABORTED", "ETIMEDOUT"].includes(error.code ?? ""));
 }
 
-function revokeSessionToken(credential: string, reason: RevocationReason, id: number): Promise<void> {
+function revokeSessionToken(credential: string, reason: RevocationReason, id: number): Promise<LogoutOutcome> {
   if (!credential || (reason === "login-rollback" && captureSession().token === credential && getSessionSnapshot().status === "valid")) {
-    return Promise.resolve();
+    return Promise.resolve({ status: "local" });
   }
   const existing = revocations.get(credential);
   if (existing) return existing;
   const notify = (status: "pending" | "confirmed" | "unconfirmed", message?: string) => {
     if (getSessionSnapshot().id === id) emitSessionEvent({ type: "revocation-result", id, reason, status, ...(message ? { message } : {}) });
   };
-  const request = (async () => {
+  const request = (async (): Promise<LogoutOutcome> => {
     notify("pending");
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
@@ -51,7 +52,7 @@ function revokeSessionToken(credential: string, reason: RevocationReason, id: nu
         const message = reason === "logout" && typeof response.message === "string"
           ? response.message.trim().slice(0, 500) : undefined;
         notify("confirmed", message);
-        return;
+        return { status: "confirmed", ...(message ? { message } : {}) };
       } catch (error: unknown) {
         if (attempt === 0 && canRetryRevocation(error)) {
           await new Promise<void>((resolve) => setTimeout(resolve, 1000));
@@ -61,9 +62,10 @@ function revokeSessionToken(credential: string, reason: RevocationReason, id: nu
           logAuthRequestError(reason === "logout" ? "logout-revocation" : "login-rollback-revocation", error);
         }
         notify("unconfirmed");
-        return;
+        return { status: "unconfirmed" };
       }
     }
+    return { status: "unconfirmed" };
   })().finally(() => { revocations.delete(credential); });
   revocations.set(credential, request);
   return request;
@@ -76,13 +78,20 @@ export function revokeLoginAttempt(credential: string, id: number) {
 
 export function endSession({ reason = "logout", context = captureSession(), rollbackToken }: EndSessionOptions = {}): Promise<EndSessionResult | null> {
   const credential = reason === "login-rollback" ? rollbackToken ?? context.token : context.token;
-  const revoke = (id: number) => {
+  const revoke = ({ id, storageCleared }: EndSessionResult) => {
     if (credential && (reason === "logout" || reason === "login-rollback")) {
-      void revokeSessionToken(credential, reason, id);
+      const request = revokeSessionToken(credential, reason, id);
+      if (reason === "logout") void request.then((outcome) => finishLogout(id, outcome, storageCleared));
+    } else if (reason === "logout") {
+      finishLogout(id, { status: "local" }, storageCleared);
     }
   };
   if (reason === "login-rollback" && credential === captureSession().token && getSessionSnapshot().status === "valid") {
     return Promise.resolve(null);
+  }
+  // Header/sidebar may submit together. Do not create another transition during revocation.
+  if (reason === "logout" && context.id === getSessionSnapshot().id && getSessionSnapshot().logout) {
+    return cleanup ?? Promise.resolve(null);
   }
   if (cleanup) {
     if (context.id !== cleanupOwnerId && context.id !== cleanupTransitionId) {
@@ -93,7 +102,8 @@ export function endSession({ reason = "logout", context = captureSession(), roll
       return Promise.resolve(null);
     }
     // Preserve a rollback/revocation request that joins an ongoing local cleanup.
-    void cleanup.then((result) => revoke(result.id));
+    if (reason === "logout" && cleanupTransitionId !== null) startLogout(cleanupTransitionId);
+    void cleanup.then(revoke);
     return cleanup;
   }
   if (context.id !== getSessionSnapshot().id) {
@@ -102,7 +112,7 @@ export function endSession({ reason = "logout", context = captureSession(), roll
   }
 
   const owner = { token: context.token ?? store.getState().auth.token, reference: store.getState().auth.reference };
-  const transition = beginSessionEnd();
+  const transition = beginSessionEnd(reason);
   cleanupOwnerId = context.id;
   cleanupTransitionId = transition.id;
   // Reset synchronously; server availability never controls local termination.
@@ -118,15 +128,15 @@ export function endSession({ reason = "logout", context = captureSession(), roll
   }
 
   cleanup = (async () => {
-    await cancelSessionQueries(context.id);
-    removeSessionCache(context.id);
+    try { await cancelSessionQueries(context.id); } catch { storageCleared = false; }
+    try { removeSessionCache(context.id); } catch { storageCleared = false; }
     storageCleared = await clearPersistedSession(owner) && storageCleared;
     finishSessionEnd(transition.id);
     if (reason !== "external" || readStoredToken() === null || !storageCleared) {
       emitSessionEvent({ type: "ended", id: transition.id, reason, storageCleared });
     }
     // Server availability never blocks cleanup or supplies credentials from a new account.
-    revoke(transition.id);
+    revoke({ id: transition.id, storageCleared });
     return { id: transition.id, storageCleared };
   })().finally(() => { cleanup = null; cleanupOwnerId = null; cleanupTransitionId = null; });
   return cleanup;

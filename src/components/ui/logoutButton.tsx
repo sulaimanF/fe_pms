@@ -5,7 +5,6 @@ import { LogOut } from "lucide-react";
 import { useLogout } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import ConfirmDialogsLogout from "@/components/dialogs/ConfirmDiloagsLogout";
-import LoadingOverlay from "@/components/ui/LoadingOverlay";
 
 interface LogoutButtonProps {
   variant?: "button" | "menu";
@@ -62,10 +61,6 @@ export default function LogoutButton({
         loading={loggingOut}
       />
 
-      <LoadingOverlay
-        open={loggingOut}
-        text="Logging out..."
-      />
     </>
   );
 }

@@ -24,7 +24,6 @@ import { useLogout } from "@/hooks/useAuth";
 import { useAppSelector } from "@/store/hooks";
 import { useState } from "react";
 import ConfirmDialogsLogout from "@/components/dialogs/ConfirmDiloagsLogout";
-import LoadingOverlay from "../ui/LoadingOverlay";
 import { useAuthorization } from "@/hooks/useAuthorization";
 import { getRoutePermissions } from "@/lib/authorization";
 
@@ -34,10 +33,10 @@ type NavLink = {
     path: string;
 };
 
-type NavSection = {
-    title: string;
-    items: NavLink[];
-};
+// type NavSection = {
+//     title: string;
+//     items: NavLink[];
+// };
 
 // const navItems: NavSection[] = [
 //   {
@@ -274,10 +273,6 @@ export default function AppSidebar() {
         loading={loggingOut}
       />
 
-      <LoadingOverlay
-        open={loggingOut}
-        text="Logging out..."
-      />
     </Sidebar>
   );
 }

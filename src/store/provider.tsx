@@ -11,11 +11,13 @@ import {
   captureSession, getSessionSnapshot, initializeSession, isCurrentSession,
   readStoredToken, subscribeSessionEvents,
   getServerSessionSnapshot, subscribeSession,
+  acknowledgeLogout,
 } from "@/lib/session";
 import { endSession } from "@/lib/sessionLifecycle";
 import { verifySession } from "@/lib/sessionVerification";
 import { prepareSession } from "./slices/authSlice";
 import { store, persistor } from "./store";
+import LoadingOverlay from "@/components/ui/LoadingOverlay";
 
 function SessionBoundary({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -32,13 +34,13 @@ function SessionBoundary({ children }: { children: React.ReactNode }) {
         }
       } else if (event.id === getSessionSnapshot().id) {
         if (event.type === "ended") {
+          // Explicit logout waits for the server result; expiration/OTP rollback keep their flow.
+          if (event.reason === "logout" || getSessionSnapshot().logout) return;
           router.replace("/login");
           if (!event.storageCleared) toast.warning("Sesi lokal berakhir, tetapi penyimpanan sesi gagal dibersihkan.");
           else if (event.reason === "expired") toast.warning("Sesi telah berakhir. Silakan login kembali.");
           else if (event.reason === "login-rollback") toast.warning("Percobaan login dibatalkan. Silakan login kembali untuk mendapatkan OTP baru.");
-        } else if (event.status === "confirmed" && event.reason === "logout") {
-          toast.success(event.message || "Logged out successfully.");
-        } else if (event.status === "unconfirmed") {
+        } else if (event.status === "unconfirmed" && event.reason !== "logout") {
           toast.warning(event.reason === "login-rollback"
             ? "Percobaan login sudah dibatalkan secara lokal. Pencabutan token di server belum dapat dipastikan."
             : "Anda sudah logout lokal. Pencabutan token di server belum dapat dipastikan.");
@@ -47,6 +49,8 @@ function SessionBoundary({ children }: { children: React.ReactNode }) {
     });
 
     const synchronize = async (external = false) => {
+      // Another tab clearing the same token must not dismiss our explicit logout progress.
+      if (external && getSessionSnapshot().logout && readStoredToken() === null) return;
       const ownVersion = ++version;
       const previous = captureSession();
       if (external && getSessionSnapshot().ready) {
@@ -87,11 +91,32 @@ function SessionBoundary({ children }: { children: React.ReactNode }) {
     };
   }, [router]);
 
+  useEffect(() => {
+    const progress = session.logout;
+    if (progress?.status !== "finished") return;
+    if (pathname !== "/login") {
+      router.replace("/login");
+      return;
+    }
+    // Notify after the login subtree (including its toaster) has mounted.
+    // Read the live snapshot so repeated effects cannot notify twice or affect a newer session.
+    const current = getSessionSnapshot();
+    if (current.id !== session.id || current.logout !== progress) return;
+    acknowledgeLogout(session.id);
+    if (progress.outcome.status === "confirmed") toast.success(progress.outcome.message || "Logged out successfully.");
+    else if (progress.outcome.status === "unconfirmed") toast.warning("Anda sudah logout lokal. Pencabutan token di server belum dapat dipastikan.");
+    else toast.info("Sesi lokal telah berakhir.");
+    if (!progress.storageCleared) toast.warning("Sesi lokal berakhir, tetapi pembersihan penyimpanan atau cache sesi belum seluruhnya berhasil.");
+  }, [session.id, session.logout, pathname, router]);
+
   // Discard private form/observer state on a boundary; keep an ongoing OTP mounted.
   const boundaryKey = pathname === "/login" || pathname === "/otp" || pathname === "/"
     ? "auth" : session.id;
   if (!session.ready) return null;
-  return <Fragment key={boundaryKey}>{children}</Fragment>;
+  return <>
+    {session.logout && <div role="status" aria-live="polite" aria-busy="true"><LoadingOverlay open text="Logging out..." /></div>}
+    <Fragment key={boundaryKey}>{children}</Fragment>
+  </>;
 }
 
 export default function ReduxProvider({ children }: { children: React.ReactNode }) {

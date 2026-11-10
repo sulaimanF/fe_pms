@@ -4,6 +4,8 @@ import { assertEntityResponse, collectPages, isValidEntityId } from "@/lib/manag
 import { sameAssignmentIds } from "@/lib/managementForm";
 import type { ApiResponse } from "@/types/common";
 import type { UserCreateRequest, UserUpdateRequest, UserResponse, UserDetailResponse, UserWriteResponse, UserDeleteResponse } from "@/types/userManagement";
+import type { UserPermissionOverride, UserPermissionsResponse, UserPermissionResponse, UserPermissionCreateRequest, UserPermissionUpdateRequest } from "@/types/userManagement";
+import { normalizeUserPermissionExpiry, userPermissionMatches } from "@/validations/userPermissionSchema";
 
 // The backend changes supplied with this task must be installed before writing.
 export const USER_WRITE_CONTRACT = "user-assignments-v1";
@@ -77,3 +79,51 @@ export const deleteUser = async (id: number): Promise<UserDeleteResponse> => {
   return response.data;
 };
 export const assignUserRoles = async (id: number, roleIds: number[]) => assertEntityResponse((await api.post<UserWriteResponse>("/users/" + id + "/roles", { role_ids: roleIds })).data);
+
+export class UserPermissionResponseError extends Error {
+  constructor(public readonly mayHaveSaved = false) {
+    super("Respons permission khusus belum dapat diverifikasi. Muat ulang hasil sebelum mengulang operasi.");
+    this.name = "UserPermissionResponseError";
+  }
+}
+function assertPermissionIds(...ids: number[]) {
+  if (ids.some((id) => !isValidEntityId(id))) throw new Error("ID user/permission tidak valid.");
+}
+function readUserPermission(value: unknown, mayHaveSaved: boolean): UserPermissionOverride {
+  if (!value || typeof value !== "object") throw new UserPermissionResponseError(mayHaveSaved);
+  const row = value as Partial<UserPermissionOverride>;
+  if (!isValidEntityId(row.permission_id) || typeof row.granted !== "boolean" || typeof row.is_active !== "boolean" ||
+    typeof row.code !== "string" || typeof row.module !== "string" || typeof row.resource !== "string" || typeof row.action !== "string" ||
+    (row.reason !== null && typeof row.reason !== "string") || typeof row.granted_at !== "string" ||
+    (row.granted_by !== null && !isValidEntityId(row.granted_by)) || (row.expires_at !== null && typeof row.expires_at !== "string")) throw new UserPermissionResponseError(mayHaveSaved);
+  try { return { ...row, expires_at: normalizeUserPermissionExpiry(row.expires_at) } as UserPermissionOverride; }
+  catch { throw new UserPermissionResponseError(mayHaveSaved); }
+}
+export async function getUserPermissions(userId: number, signal?: AbortSignal): Promise<UserPermissionsResponse> {
+  assertPermissionIds(userId);
+  const response = await api.get<UserPermissionsResponse>(`/users/${userId}/permissions`, { signal });
+  if (response.status !== 200 || response.data?.success !== true || response.data.http_code !== 200 || !Array.isArray(response.data.data)) throw new UserPermissionResponseError();
+  const rows = response.data.data.map((row: unknown) => readUserPermission(row, false));
+  if (new Set(rows.map((row) => row.permission_id)).size !== rows.length) throw new UserPermissionResponseError();
+  return { ...response.data, data: rows };
+}
+export async function createUserPermission(userId: number, payload: UserPermissionCreateRequest): Promise<UserPermissionResponse> {
+  assertPermissionIds(userId, payload.permission_id);
+  const response = await api.post<UserPermissionResponse>(`/users/${userId}/permissions`, payload);
+  const row = readUserPermission(response.data?.data, true);
+  if (response.status !== 201 || response.data?.success !== true || response.data.http_code !== 201 || row.permission_id !== payload.permission_id || !userPermissionMatches(row, payload)) throw new UserPermissionResponseError(true);
+  return { ...response.data, data: row };
+}
+export async function updateUserPermission(userId: number, permissionId: number, payload: UserPermissionUpdateRequest): Promise<UserPermissionResponse> {
+  assertPermissionIds(userId, permissionId);
+  const response = await api.put<UserPermissionResponse>(`/users/${userId}/permissions/${permissionId}`, payload);
+  const row = readUserPermission(response.data?.data, true);
+  if (response.status !== 200 || response.data?.success !== true || response.data.http_code !== 200 || row.permission_id !== permissionId || !userPermissionMatches(row, payload)) throw new UserPermissionResponseError(true);
+  return { ...response.data, data: row };
+}
+export async function deleteUserPermission(userId: number, permissionId: number): Promise<ApiResponse<null>> {
+  assertPermissionIds(userId, permissionId);
+  const response = await api.delete<ApiResponse<null>>(`/users/${userId}/permissions/${permissionId}`);
+  if (response.status !== 200 || response.data?.success !== true || response.data.http_code !== 200 || response.data.data !== null) throw new UserPermissionResponseError(true);
+  return response.data;
+}

@@ -19,7 +19,6 @@ import { captureSession, isCurrentSession } from "@/lib/session";
 import { isValidEntityId } from "@/lib/managementApi";
 import type { Role } from "@/types/role";
 
-
 export default function RoleManagementPage() {
   return <AccessGuard permissions={ACCESS.roleList}><RoleManagementContent /></AccessGuard>;
 }
@@ -30,7 +29,14 @@ function RoleManagementContent() {
   const deleteRoleMutation = useDeleteRole();
   const deleting = useRef(false);
   const mounted = useRef(true);
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  
   const handleDelete = (role: Role) => {
     if (deleteRoleMutation.isPending) return;
     if (!canAccess(ACCESS.roleDelete)) {

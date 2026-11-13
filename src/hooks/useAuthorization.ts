@@ -15,6 +15,7 @@ export function useAuthorization(required: AccessRequirement = []) {
     status: session.status === "valid" && !valid ? "verifying" : session.status,
     failure: session.failure,
     allowed: valid && hasPermissions(auth.permissions, required),
+    canManageUserBypass: valid && auth.capabilities?.can_manage_user_bypass === true,
     can: canAccess,
   };
 }

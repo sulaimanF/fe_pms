@@ -161,6 +161,7 @@ export default function OtpForm() {
           roles: me.data.roles,
           permissions: me.data.permissions,
           menu: me.data.menu,
+          capabilities: me.data.capabilities,
         })
       );
 

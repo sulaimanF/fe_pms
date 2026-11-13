@@ -34,7 +34,14 @@ function UserManagementContent() {
   const deleteMutation = useDeleteUser();
   const deleting = useRef(false);
   const mounted = useRef(true);
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  
   const handlePermissions = (user: UserManagement) => {
     if (!canAccess(ACCESS.userDetail) || !canAccess(ACCESS.userManagePermissions)) {
       toast.error("Akses permission khusus memerlukan user.view dan user.managePermission."); return;
@@ -44,6 +51,7 @@ function UserManagementContent() {
     }
     setPermissionUser({ id: user.id, username: user.username, sessionId: captureSession().id });
   };
+  
   const handleDelete = (user: UserManagement) => {
     if (deleteMutation.isPending) return;
     if (!canAccess(ACCESS.userDelete)) {
@@ -54,6 +62,7 @@ function UserManagementContent() {
     }
     setSelectedUser({ id: user.id, username: user.username, sessionId: captureSession().id });
   };
+  
   const confirmDelete = async () => {
     if (!selectedUser || deleting.current || deleteMutation.isPending) return;
     const context = captureSession();
@@ -89,6 +98,7 @@ function UserManagementContent() {
       toast.error(message);
     } finally { deleting.current = false; }
   };
+  
   const {
     data,
     isLoading,
@@ -118,49 +128,49 @@ function UserManagementContent() {
 
   return (
     <>
-    <DataTables
-      table={table}
-      title="User Management"
-      description="Manage user data"
-      headerClassName="bg-blue-600 text-white"
-      actions={
-        access.can(ACCESS.userCreate) && <Button
-          asChild
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <Link href="/userManagement/create">
-            <Plus className="mr-2 h-4 w-4" />
-            Add User
-          </Link>
-        </Button>
-      }
-      toolbar={
-        <div className="flex items-center justify-end w-full">
-          <DataTablesSearch
-            value={globalFilter}
-            onChange={setGlobalFilter}
-            placeholder="Search user..."
-          />
-        </div>
-      }
-    />
-    {permissionUser && permissionUser.sessionId === captureSession().id && access.can(ACCESS.userDetail) && access.can(ACCESS.userManagePermissions) && (
-      <UserPermissionsDialog key={`${permissionUser.sessionId}:${permissionUser.id}`} user={permissionUser} onClose={() => setPermissionUser(null)} />
-    )}
-    <ConfirmDialogs
-      open={!!selectedUser && selectedUser.sessionId === captureSession().id && access.can(ACCESS.userDelete)}
-      onOpenChange={(open) => {
-        if (!open && !deleting.current && !deleteMutation.isPending) setSelectedUser(null);
-      }}
-      title="Hapus User?"
-      description={`Apakah Anda yakin ingin menghapus user "${selectedUser?.username ?? ""}"?`}
-      confirmText="Hapus"
-      cancelText="Tidak"
-      loadingText="Menghapus..."
-      closeOnConfirm={false}
-      onConfirm={() => { void confirmDelete(); }}
-      loading={deleteMutation.isPending}
-    />
+      <DataTables
+        table={table}
+        title="User Management"
+        description="Manage user data"
+        headerClassName="bg-blue-600 text-white"
+        actions={
+          access.can(ACCESS.userCreate) && <Button
+            asChild
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Link href="/userManagement/create">
+              <Plus className="mr-2 h-4 w-4" />
+              Add User
+            </Link>
+          </Button>
+        }
+        toolbar={
+          <div className="flex items-center justify-end w-full">
+            <DataTablesSearch
+              value={globalFilter}
+              onChange={setGlobalFilter}
+              placeholder="Search user..."
+            />
+          </div>
+        }
+      />
+      {permissionUser && permissionUser.sessionId === captureSession().id && access.can(ACCESS.userDetail) && access.can(ACCESS.userManagePermissions) && (
+        <UserPermissionsDialog key={`${permissionUser.sessionId}:${permissionUser.id}`} user={permissionUser} onClose={() => setPermissionUser(null)} />
+      )}
+      <ConfirmDialogs
+        open={!!selectedUser && selectedUser.sessionId === captureSession().id && access.can(ACCESS.userDelete)}
+        onOpenChange={(open) => {
+          if (!open && !deleting.current && !deleteMutation.isPending) setSelectedUser(null);
+        }}
+        title="Hapus User?"
+        description={`Apakah Anda yakin ingin menghapus user "${selectedUser?.username ?? ""}"?`}
+        confirmText="Hapus"
+        cancelText="Tidak"
+        loadingText="Menghapus..."
+        closeOnConfirm={false}
+        onConfirm={() => { void confirmDelete(); }}
+        loading={deleteMutation.isPending}
+      />
     </>
   );
 }

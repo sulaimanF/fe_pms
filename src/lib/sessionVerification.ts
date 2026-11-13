@@ -13,7 +13,11 @@ export function isMeResponse(value: unknown): value is MeResponse {
   return !!profile.user && typeof profile.user.id === "number" &&
     Array.isArray(profile.roles) && Array.isArray(profile.permissions) &&
     profile.permissions.every((code) => typeof code === "string") &&
-    Array.isArray(profile.menu);
+    Array.isArray(profile.menu) &&
+    (profile.capabilities === undefined ||
+      (profile.capabilities !== null && typeof profile.capabilities === "object" &&
+        !Array.isArray(profile.capabilities) &&
+        typeof profile.capabilities.can_manage_user_bypass === "boolean"));
 }
 
 type VerificationResult = { rollbackId: number } | null;

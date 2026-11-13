@@ -76,9 +76,11 @@ export default function UserPermissionsDialog({ user, onClose }: Props) {
     if (!ready) { form.setError("root.server", { message: "Muat ulang daftar override sebelum mengubah data." }); return; }
     running.current = true;
     try {
-      await mutation.mutateAsync(input);
+      const response = await mutation.mutateAsync(input);
       if (!mounted.current || !isCurrentSession(context)) return;
-      toast.success(input.kind === "delete" ? "Override dihapus. Akses kembali mengikuti Role." : "Permission khusus berhasil disimpan.");
+      toast.success(typeof response.message === "string" && response.message.trim()
+        ? response.message.trim().slice(0, 500)
+        : input.kind === "delete" ? "Override dihapus. Akses kembali mengikuti Role." : "Permission khusus berhasil disimpan.");
       if (input.kind !== "delete" || editing?.permission_id === input.permissionId) reset();
       setDeleting(undefined);
     } catch (error: unknown) {

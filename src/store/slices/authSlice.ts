@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { AuthenticatedSession, AuthUser, LoginOtpData, AuthMenuGroup, AuthRole } from "@/types/auth";
+import type { AuthenticatedSession, AuthUser, LoginOtpData, AuthMenuGroup, AuthRole, AuthCapabilities } from "@/types/auth";
 
 interface AuthState {
   login: string | null;
@@ -14,6 +14,7 @@ interface AuthState {
   roles: AuthRole[];
   permissions: string[];
   menu: AuthMenuGroup[];
+  capabilities: AuthCapabilities;
   isAuthenticated: boolean;
 }
 
@@ -30,6 +31,7 @@ const initialState: AuthState = {
   roles: [],
   permissions: [],
   menu: [],
+  capabilities: { can_manage_user_bypass: false },
   isAuthenticated: false,
 };
 
@@ -91,6 +93,9 @@ const authSlice = createSlice({
       state.roles = action.payload.roles;
       state.permissions = action.payload.permissions;
       state.menu = action.payload.menu;
+      state.capabilities = {
+        can_manage_user_bypass: action.payload.capabilities?.can_manage_user_bypass === true,
+      };
       state.isAuthenticated = true;
 
       state.login = null;
@@ -135,6 +140,7 @@ const authSlice = createSlice({
       state.roles = [];
       state.permissions = [];
       state.menu = [];
+      state.capabilities = { can_manage_user_bypass: false };
       state.isAuthenticated = false;
     },
   },

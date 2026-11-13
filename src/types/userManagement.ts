@@ -39,8 +39,7 @@ export interface UserManagement {
   phone: string | null;
   organization_unit_id: number | null;
   is_active: boolean;
-  blocked_at: string | null;
-  blocked_by: number | null;
+  is_bypass?: boolean;
   two_factor_confirmed_at: string | null;
   password_changed_at: string | null;
   created_at: string; updated_at: string;
@@ -57,6 +56,7 @@ export interface UserCreateRequest {
   password_confirmation: string;
   organization_unit_id?: number | null;
   is_active?: boolean;
+  is_bypass?: boolean;
   role_ids: number[];
   outlet_ids: number[];
 }

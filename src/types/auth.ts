@@ -86,9 +86,14 @@ export interface AuthMenuGroup {
   items: AuthMenuItem[];
 }
 
+export interface AuthCapabilities {
+  can_manage_user_bypass: boolean;
+}
+
 export interface MeResponse {
   user: AuthUser;
   roles: AuthRole[];
   permissions: string[];
   menu: AuthMenuGroup[];
+  capabilities?: AuthCapabilities;
 }

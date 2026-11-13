@@ -18,6 +18,14 @@ export class UserWriteContractError extends Error {
   }
 }
 
+// Contains no Axios config, request body, or credentials. Only actual write failures use this.
+export class UserWriteUncertainError extends Error {
+  constructor(public readonly entityId?: number) {
+    super("Hasil penyimpanan belum dapat dipastikan. Periksa hasil sebelum mengirim penyimpanan baru.");
+    this.name = "UserWriteUncertainError";
+  }
+}
+
 export async function verifyUserWriteContract() {
   try {
     const response = (await api.get<ApiResponse<{ contract: string }>>("/users/write-contract")).data;
@@ -59,11 +67,28 @@ function assertAtomicUserWrite(response: UserWriteResponse, payload: UserUpdateR
   return response;
 }
 
-export const getUsers = async (page?: number) => (await api.get<UserResponse>("/users", { params: page ? { page, per_page: 100 } : undefined })).data;
-export const getAllUsers = () => collectPages(getUsers);
-export const getUserById = async (id: number) => assertEntityResponse((await api.get<UserDetailResponse>("/users/" + id)).data);
-export const createUser = async (payload: UserCreateRequest) => assertAtomicUserWrite((await api.post<UserWriteResponse>("/users", payload)).data, payload);
-export const updateUser = async (id: number, payload: UserUpdateRequest) => assertAtomicUserWrite((await api.put<UserWriteResponse>("/users/" + id, payload)).data, payload, id);
+export const getUsers = async (page?: number, signal?: AbortSignal) => (await api.get<UserResponse>("/users", { params: page ? { page, per_page: 100 } : undefined, signal })).data;
+export const getAllUsers = (signal?: AbortSignal) => collectPages((page) => getUsers(page, signal));
+export const getUserById = async (id: number, signal?: AbortSignal) => assertEntityResponse((await api.get<UserDetailResponse>("/users/" + id, { signal })).data);
+async function writeUser(payload: UserUpdateRequest, id?: number) {
+  try {
+    const response = id === undefined
+      ? await api.post<UserWriteResponse>("/users", payload)
+      : await api.put<UserWriteResponse>("/users/" + id, payload);
+    if (response.status !== (id === undefined ? 201 : 200)) throw new UserWriteUncertainError();
+    return assertAtomicUserWrite(response.data, payload, id);
+  } catch (error: unknown) {
+    if (error instanceof UserWriteUncertainError) throw error;
+    if (error instanceof UserWriteContractError && error.mayHaveSaved) throw new UserWriteUncertainError(error.entityId);
+    // Only known request rejections prove that this write was refused. Other failures,
+    // including response decoding failures, may follow a committed transaction.
+    if (axios.isAxiosError(error) && error.response &&
+      [400, 401, 403, 404, 405, 409, 415, 422, 429].includes(error.response.status)) throw error;
+    throw new UserWriteUncertainError();
+  }
+}
+export const createUser = (payload: UserCreateRequest) => writeUser(payload);
+export const updateUser = (id: number, payload: UserUpdateRequest) => writeUser(payload, id);
 export class UserDeleteResponseError extends Error {
   constructor() {
     super("Server belum mengonfirmasi penghapusan user. Periksa daftar sebelum mencoba lagi.");

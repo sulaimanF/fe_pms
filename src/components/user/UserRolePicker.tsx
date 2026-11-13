@@ -10,28 +10,30 @@ interface Props {
   onChange: (ids: number[]) => void;
   disabled?: boolean;
   invalid?: boolean;
+  required?: boolean;
 }
 
-export default function UserRolePicker({ options, currentRoles = [], selectedIds, onChange, disabled, invalid }: Props) {
+export default function UserRolePicker({ options, currentRoles = [], selectedIds, onChange, disabled, invalid, required = false }: Props) {
   const hasMultipleRoles = selectedIds.length > 1;
   const currentRole = selectedIds.length === 1 ? currentRoles.find((role) => role.id === selectedIds[0]) : undefined;
   const missingCurrentRole = currentRole && !options.some((role) => role.id === currentRole.id) ? currentRole : undefined;
-  const value = hasMultipleRoles ? "" : selectedIds.length === 1 ? String(selectedIds[0]) : "none";
+  const value = hasMultipleRoles ? "" : selectedIds.length === 1 ? String(selectedIds[0]) : required ? "" : "none";
 
   return (
     <div className="space-y-2">
-      <Select disabled={disabled} value={value} onValueChange={(nextValue) => {
+      <Select required={required} disabled={disabled} value={value} onValueChange={(nextValue) => {
         if (disabled) return;
-        if (nextValue === "none") { onChange([]); return; }
+        if (nextValue === "none") { if (!required) onChange([]); return; }
         const role = options.find((item) => String(item.id) === nextValue);
         if (role) onChange([role.id]);
       }}>
         <SelectTrigger id="user-roles" className="w-full" aria-invalid={invalid || hasMultipleRoles}
+          aria-required={required || undefined}
           aria-describedby={hasMultipleRoles ? "user-roles-legacy" : undefined}>
           <SelectValue placeholder="Pilih satu role" />
         </SelectTrigger>
         <SelectContent position="popper">
-          <SelectItem value="none">Tanpa role</SelectItem>
+          {!required && <SelectItem value="none">Tanpa role</SelectItem>}
           {missingCurrentRole && <SelectItem value={String(missingCurrentRole.id)} disabled>{missingCurrentRole.name} (role saat ini)</SelectItem>}
           {options.map((role) => <SelectItem key={role.id} value={String(role.id)}>{role.name} ({role.code})</SelectItem>)}
         </SelectContent>

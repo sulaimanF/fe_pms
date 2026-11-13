@@ -1,4 +1,5 @@
 "use client";
+
 import { useParams } from "next/navigation";
 import UpdateRoleForm from "@/components/role/UpdateRoleForm";
 import { AccessGuard, AccessDenied } from "@/components/auth/AccessGuard";
@@ -7,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { useRole } from "@/hooks/useRoles";
 import { ACCESS, isForbidden } from "@/lib/authorization";
 import { isValidEntityId } from "@/lib/managementApi";
+
 export default function UpdateRolePage() {
   return <AccessGuard permissions={ACCESS.roleUpdate}><UpdateRoleContent /></AccessGuard>;
 }
+
 function UpdateRoleContent() {
   const params = useParams();
   const id = typeof params.id === "string" && /^[1-9]\d*$/.test(params.id) ? Number(params.id) : NaN;

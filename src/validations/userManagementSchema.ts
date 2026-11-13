@@ -11,15 +11,26 @@ const fields = {
   organization_unit_id: z.string().refine((v) => v === "" || (/^[1-9]\d*$/.test(v) && Number.isSafeInteger(Number(v))), "ID organisasi tidak valid."),
   is_active: z.boolean(), role_ids: z.array(z.number().int().positive()).max(1, "Pilih maksimal satu role untuk user."),
   outlet_ids: z.array(z.number().int().positive()),
+  is_bypass: z.boolean().optional(),
 };
 
-export const createUserSchema = z.object(fields).superRefine((value, context) => {
+export const createUserSchema = z.object({
+  ...fields,
+  organization_unit_id: fields.organization_unit_id.refine((value) => value !== "", "Organisasi wajib dipilih."),
+  role_ids: fields.role_ids.min(1, "Pilih satu role untuk user."),
+  outlet_ids: fields.outlet_ids.min(1, "Pilih minimal satu outlet kelolaan."),
+}).superRefine((value, context) => {
   if (value.password.length < 8) context.addIssue({ code: "custom", path: ["password"], message: "Password minimal 8 karakter." });
   if (value.password !== value.password_confirmation) context.addIssue({ code: "custom", path: ["password_confirmation"], message: "Konfirmasi password tidak sama." });
   if (!value.password && value.password_confirmation) context.addIssue({ code: "custom", path: ["password_confirmation"], message: "Isi password baru terlebih dahulu." });
 });
 
-export const updateUserSchema = z.object(fields).superRefine((value, context) => {
+export const updateUserSchema = z.object({
+  ...fields,
+  organization_unit_id: fields.organization_unit_id.refine((value) => value !== "", "Organisasi wajib dipilih."),
+  role_ids: fields.role_ids.min(1, "Pilih satu role untuk user."),
+  outlet_ids: fields.outlet_ids.min(1, "Pilih minimal satu outlet kelolaan."),
+}).superRefine((value, context) => {
   if (value.password !== "" && value.password.length < 8) context.addIssue({ code: "custom", path: ["password"], message: "Password minimal 8 karakter." });
   if (value.password !== "" && value.password !== value.password_confirmation) context.addIssue({ code: "custom", path: ["password_confirmation"], message: "Konfirmasi password tidak sama." });
   if (!value.password && value.password_confirmation) context.addIssue({ code: "custom", path: ["password_confirmation"], message: "Isi password baru terlebih dahulu." });
@@ -29,7 +40,7 @@ export type CreateUserFormValues = z.infer<typeof createUserSchema>;
 
 export type UpdateUserFormValues = z.infer<typeof updateUserSchema>;
 
-export function buildUserCreate(values: CreateUserFormValues): UserCreateRequest {
+export function buildUserCreate(values: CreateUserFormValues, allowBypass = false): UserCreateRequest {
   return {
     username: values.username,
     email: values.email,
@@ -42,10 +53,11 @@ export function buildUserCreate(values: CreateUserFormValues): UserCreateRequest
     is_active: values.is_active,
     role_ids: values.role_ids,
     outlet_ids: values.outlet_ids,
+    ...(allowBypass && typeof values.is_bypass === "boolean" ? { is_bypass: values.is_bypass } : {}),
   };
 }
 
-export function buildUserUpdate(values: UpdateUserFormValues, dirty: Partial<Record<keyof UpdateUserFormValues, unknown>>): UserUpdateRequest {
+export function buildUserUpdate(values: UpdateUserFormValues, dirty: Partial<Record<keyof UpdateUserFormValues, unknown>>, allowBypass = false): UserUpdateRequest {
   const payload: UserUpdateRequest = {};
   if (dirty.username) payload.username = values.username;
   if (dirty.email) payload.email = values.email;
@@ -54,6 +66,7 @@ export function buildUserUpdate(values: UpdateUserFormValues, dirty: Partial<Rec
   if (dirty.phone) payload.phone = values.phone || null;
   if (dirty.organization_unit_id) payload.organization_unit_id = values.organization_unit_id ? Number(values.organization_unit_id) : null;
   if (dirty.is_active) payload.is_active = values.is_active;
+  if (allowBypass && dirty.is_bypass && typeof values.is_bypass === "boolean") payload.is_bypass = values.is_bypass;
   if (dirty.role_ids) payload.role_ids = values.role_ids;
   if (dirty.outlet_ids) payload.outlet_ids = values.outlet_ids;
   if (values.password !== "") { payload.password = values.password; payload.password_confirmation = values.password_confirmation; }

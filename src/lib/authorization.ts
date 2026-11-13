@@ -45,6 +45,16 @@ export class AccessDeniedError extends Error {
   }
 }
 
+export function canManageUserBypass() {
+  return canAccess(ACCESS.dashboard) &&
+    store.getState().auth.capabilities?.can_manage_user_bypass === true;
+}
+
+export function assertManageUserBypass(id: number) {
+  assertSession(id);
+  if (!canManageUserBypass()) throw new AccessDeniedError();
+}
+
 export function assertAccess(id: number, required: AccessRequirement) {
   assertSession(id);
   if (!canAccess(required)) throw new AccessDeniedError();

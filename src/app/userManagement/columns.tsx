@@ -3,6 +3,10 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { UserManagement } from "@/types/userManagement";
 import DataTablesActions from "@/components/tables/DataTablesActions";
+import { getUnrevokedUserOutlets } from "@/lib/userAssignments";
+
+const outletNames = (user: UserManagement) => getUnrevokedUserOutlets(user.outlets)
+  .map((outlet) => outlet.name).filter((name) => typeof name === "string").join(", ");
 
 export const columns = (
   onDelete: (user: UserManagement) => void,
@@ -19,23 +23,23 @@ export const columns = (
     header: "Email",
   },
   {
-    accessorKey: "role",
+    id: "role",
+    accessorFn: (user) => (user.roles ?? []).map((role) => role.name).filter((name) => typeof name === "string").join(", "),
     header: "Role",
     cell: ({ row }) =>
     (row.original.roles ?? []).map(role => role.name).join(", "),
   },
   {
-    accessorKey: "kantorWilayah",
+    id: "kantorWilayah",
+    accessorFn: (user) => user.organization_unit?.name ?? "",
     header: "Kantor Wilayah",
     cell: ({ row }) => row.original.organization_unit?.name ?? "-",
   },
   {
-    accessorKey: "outlet",
+    id: "outlet",
+    accessorFn: outletNames,
     header: "Outlet Kelolaan",
-      cell: ({ row }) =>
-      (row.original.outlets ?? [])
-        .map(outlet => outlet.name)
-        .join(", "),
+    cell: ({ row }) => outletNames(row.original),
   },
   {
     id: "actions",

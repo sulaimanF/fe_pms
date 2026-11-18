@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { isForbidden } from "@/lib/authorization";
 
-interface OutletOption { id: number; name: string; code?: string; outlet_type?: string }
+interface OutletOption { id: number; name: string; code?: string; outlet_type?: string | null }
 interface Props {
   selectedIds: number[];
   onChange: (ids: number[]) => void;

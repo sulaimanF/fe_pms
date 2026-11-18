@@ -4,7 +4,7 @@ import type { UserManagement, UserUpdateRequest } from "@/types/userManagement";
 
 const readableFields = ["username", "email", "full_name", "display_name", "phone", "organization_unit_id", "is_active", "is_bypass"] as const;
 type ReadableField = typeof readableFields[number];
-type ExpectedUser = Pick<UserUpdateRequest, ReadableField | "role_ids" | "outlet_ids">;
+type ExpectedUser = Pick<UserUpdateRequest, ReadableField | "role_id" | "outlet_ids">;
 
 export interface UserWriteAttempt {
   readonly kind: "create" | "update";
@@ -19,9 +19,8 @@ export function snapshotUserWrite(kind: UserWriteAttempt["kind"], payload: UserU
   for (const key of readableFields) {
     if (Object.prototype.hasOwnProperty.call(payload, key)) Object.assign(expected, { [key]: payload[key] });
   }
-  if (payload.role_ids !== undefined) expected.role_ids = [...payload.role_ids];
+  if (payload.role_id !== undefined) expected.role_id = payload.role_id;
   if (payload.outlet_ids !== undefined) expected.outlet_ids = [...payload.outlet_ids];
-  Object.freeze(expected.role_ids);
   Object.freeze(expected.outlet_ids);
   return Object.freeze({ kind, id, expected: Object.freeze(expected), passwordRequested: !!payload.password });
 }
@@ -33,9 +32,9 @@ export function compareUserWrite(user: UserManagement, attempt: UserWriteAttempt
     if (!Object.prototype.hasOwnProperty.call(user, key) || user[key] === undefined) unavailable.push(key);
     else if (user[key] !== attempt.expected[key]) different.push(key);
   }
-  if (attempt.expected.role_ids !== undefined) {
-    if (!Array.isArray(user.roles)) unavailable.push("role_ids");
-    else if (!sameAssignmentIds(attempt.expected.role_ids, user.roles.filter((role) => role.pivot?.is_active !== false).map((role) => role.id))) different.push("role_ids");
+  if (attempt.expected.role_id !== undefined) {
+    if (!Array.isArray(user.roles)) unavailable.push("role_id");
+    else if (!sameAssignmentIds([attempt.expected.role_id], user.roles.filter((role) => role.pivot?.is_active !== false).map((role) => role.id))) different.push("role_id");
   }
   if (attempt.expected.outlet_ids !== undefined) {
     if (!Array.isArray(user.outlets)) unavailable.push("outlet_ids");

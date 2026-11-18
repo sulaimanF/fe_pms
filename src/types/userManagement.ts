@@ -57,7 +57,7 @@ export interface UserCreateRequest {
   organization_unit_id?: number | null;
   is_active?: boolean;
   is_bypass?: boolean;
-  role_ids: number[];
+  role_id: number;
   outlet_ids: number[];
 }
 export type UserUpdateRequest = Partial<UserCreateRequest>;

@@ -11,29 +11,27 @@ export interface OrganizationUnit {
   parent_id: number | null;
   code: string;
   name: string;
-  full_name: string;
-  unit_type: "pusat" | "wilayah" | "cabang" | "kcp";
+  full_name: string | null;
+  unit_type: "pusat" | "wilayah" | "area" | "cabang" | "bagian" | "unit";
   level_no: number;
-  region_code: string;
-  address: string;
-  city: string;
-  province: string;
+  region_code: string | null;
+  address: string | null;
+  city: string | null;
+  province: string | null;
   country: string;
-  postal_code: string;
-  phone: string;
-  email: string;
+  postal_code: string | null;
+  phone: string | null;
+  email: string | null;
   manager_user_id: number | null;
   is_active: boolean;
   sort_order: number;
-  metadata: {
-    kode_wilayah?: string;
-  } | null;
-  created_at: string;
-  updated_at: string;
+  metadata: Record<string, unknown> | unknown[] | null;
+  created_at: string | null;
+  updated_at: string | null;
   created_by: number | null;
   updated_by: number | null;
   deleted_at: string | null;
-  parent: OrganizationParent | null;
+  parent?: OrganizationParent | null;
   jumlah_kc?: number;
   jumlah_kcp?: number;
 }
@@ -41,8 +39,8 @@ export interface OrganizationUnit {
 export interface OrganizationPagination {
   per_page: number;
   current_page: number;
-  from: number;
-  to: number;
+  from: number | null;
+  to: number | null;
   next_page_url: string | null;
   prev_page_url: string | null;
   total: number;

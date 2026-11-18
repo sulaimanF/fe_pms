@@ -11,7 +11,7 @@ import UserRolePicker from "@/components/user/UserRolePicker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUpdateUser, useUserOutletOptions, useUserWriteRecovery } from "@/hooks/useUsers";
 import UserOutletPicker from "@/components/user/UserOutletPicker";
-import { UserWriteContractError, UserWriteUncertainError } from "@/services/userManagement.services";
+import { UserWriteUncertainError } from "@/services/userManagement.services";
 import UserWriteRecoveryNotice from "@/components/user/UserWriteRecoveryNotice";
 import { snapshotUserWrite } from "@/lib/userWriteRecovery";
 import { getUnrevokedUserOutlets } from "@/lib/userAssignments";
@@ -26,7 +26,7 @@ import type { UpdateUserFormValues } from "@/validations/userManagementSchema";
 import type { UserManagement } from "@/types/userManagement";
 
 interface Props { user: UserManagement }
-const editableFields = ["username", "email", "full_name", "display_name", "phone", "password", "password_confirmation", "organization_unit_id", "is_active", "is_bypass", "role_ids", "outlet_ids"] as const;
+const editableFields = ["username", "email", "full_name", "display_name", "phone", "password", "password_confirmation", "organization_unit_id", "is_active", "is_bypass", "role_id", "outlet_ids"] as const;
 
 export default function UpdateUserForm({ user }: Props) {
   const router = useRouter();
@@ -38,6 +38,9 @@ export default function UpdateUserForm({ user }: Props) {
   const rolesQuery = useRoles(true);
   const organizationsQuery = useOrganizationUnits(true);
   const outletsQuery = useUserOutletOptions();
+  const assignedRoleIds = [...new Set(user.roles?.map((role) => role.id) ?? [])];
+  // Multiple legacy roles require an explicit selection; never silently choose the first.
+  const initialRoleId = assignedRoleIds.length === 1 ? String(assignedRoleIds[0]) : "";
   const form = useForm<UpdateUserFormValues>({
     resolver: zodResolver(updateUserSchema),
     defaultValues: {
@@ -45,14 +48,14 @@ export default function UpdateUserForm({ user }: Props) {
       display_name: user.display_name ?? "", phone: user.phone ?? "",
       password: "", password_confirmation: "",
       organization_unit_id: user.organization_unit_id ? String(user.organization_unit_id) : "",
-      is_active: user.is_active ?? true, role_ids: [...new Set(user.roles?.map((role) => role.id) ?? [])],
+      is_active: user.is_active ?? true, role_id: initialRoleId,
       is_bypass: typeof user.is_bypass === "boolean" ? user.is_bypass : undefined,
       outlet_ids: getUnrevokedUserOutlets(user.outlets).map((outlet) => outlet.id),
     },
   });
-  const selectedRoles = useWatch({ control: form.control, name: "role_ids" }) ?? [];
+  const selectedRole = useWatch({ control: form.control, name: "role_id" }) ?? "";
   const selectedOutlets = useWatch({ control: form.control, name: "outlet_ids" }) ?? [];
-  const originalRoleIds = useRef([...new Set(user.roles?.map((role) => role.id) ?? [])]);
+  const originalRoleId = useRef(initialRoleId);
   const originalOutletIds = useRef(getUnrevokedUserOutlets(user.outlets).map((outlet) => outlet.id));
   const inFlight = useRef(false);
   const mounted = useRef(true);
@@ -80,11 +83,13 @@ export default function UpdateUserForm({ user }: Props) {
     if (form.formState.dirtyFields.is_bypass && !canManageUserBypass()) {
       form.setError("root.server", { message: "Anda tidak lagi memiliki kewenangan mengubah bypass akses. Muat ulang halaman untuk memperbarui kewenangan." }); return;
     }
-    const rolesChanged = !sameAssignmentIds(values.role_ids, originalRoleIds.current);
+    const roleChanged = values.role_id !== originalRoleId.current;
     const outletsChanged = !sameAssignmentIds(values.outlet_ids, originalOutletIds.current);
-    const roleIds = rolesChanged ? values.role_ids : undefined;
-    if (roleIds !== undefined && (!rolesReady || !canAccess(ACCESS.userAssignRoles))) {
-      form.setError("role_ids", { message: "Assignment memerlukan lookup role siap, role.viewAny dan user.update." }); return;
+    if (roleChanged && (!rolesReady || !canAccess(ACCESS.userAssignRoles))) {
+      form.setError("role_id", { message: "Assignment memerlukan lookup role siap, role.viewAny dan user.update." }); return;
+    }
+    if (roleChanged && !roles.some((role) => role.id === Number(values.role_id))) {
+      form.setError("role_id", { message: "Role yang dipilih tidak tersedia." }); return;
     }
     if (outletsChanged && (!outletsReady || values.outlet_ids.some((id) =>
       !originalOutletIds.current.includes(id) && !outlets.some((outlet) => outlet.id === id)))) {
@@ -97,7 +102,7 @@ export default function UpdateUserForm({ user }: Props) {
       !organizations.some((item) => item.id === Number(values.organization_unit_id))) {
       form.setError("organization_unit_id", { message: "Organisasi yang dipilih tidak tersedia." }); return;
     }
-    const payload = buildUserUpdate(values, { ...form.formState.dirtyFields, role_ids: rolesChanged, outlet_ids: outletsChanged }, canManageUserBypass());
+    const payload = buildUserUpdate(values, { ...form.formState.dirtyFields, role_id: roleChanged, outlet_ids: outletsChanged }, canManageUserBypass());
     if (!Object.keys(payload).length) {
       form.setError("root.server", { message: "Tidak ada perubahan untuk disimpan." }); return;
     }
@@ -114,7 +119,6 @@ export default function UpdateUserForm({ user }: Props) {
     } catch (error: unknown) {
       if (!mounted.current || !isCurrentSession(context)) return;
       if (error instanceof UserWriteUncertainError) recovery.record(attempt, error);
-      else if (error instanceof UserWriteContractError) form.setError("root.server", { message: error.message });
       else applyFormFailure(form, error, editableFields);
     }
   };
@@ -251,13 +255,13 @@ export default function UpdateUserForm({ user }: Props) {
             rolesQuery.error ? <p role="alert">{isForbidden(rolesQuery.error) ? "Akses lookup role ditolak." : "Lookup role gagal dimuat."} <Button type="button" variant="outline" onClick={() => { void rolesQuery.refetch(); }}>Coba lagi</Button></p> :
             !roles.length ? <p role="status">Tidak ada role yang tersedia.</p> : null}
           {!assignmentAccess.allowed && <p role="alert">Assignment role membutuhkan user.update; penyimpanan field user tidak membutuhkan izin tambahan ini.</p>}
-          <UserRolePicker required options={roles} currentRoles={user.roles ?? []} selectedIds={selectedRoles}
-            onChange={(ids) => form.setValue("role_ids", ids, { shouldDirty: true, shouldValidate: true })}
+          <UserRolePicker required options={roles} currentRoles={user.roles ?? []} selectedId={selectedRole}
+            onChange={(id) => form.setValue("role_id", id, { shouldDirty: true, shouldValidate: true })}
             disabled={pending || !rolesReady || !assignmentAccess.allowed || !roles.length}
-            invalid={!!form.formState.errors.role_ids} />
+            invalid={!!form.formState.errors.role_id} />
           {!!user.roles?.length && <p className="text-sm">Role saat ini: {user.roles.map((role) => role.name).join(", ")}.</p>}
           <p className="text-sm text-gray-500">Mengganti role akan mengganti assignment role lama dan peran pada seluruh outlet kelolaan.</p>
-          {fieldError("role_ids")}
+          {fieldError("role_id")}
         </div>
 
         <label>Outlet Kelolaan <span className="text-red-500">*</span></label><div>

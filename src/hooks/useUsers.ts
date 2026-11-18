@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient, QueryFilters } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { getAllUsers, createUser, updateUser, deleteUser, verifyUserWriteContract, UserWriteUncertainError, UserDeleteResponseError } from "@/services/userManagement.services";
+import { getAllUsers, createUser, updateUser, deleteUser, UserWriteUncertainError, UserDeleteResponseError } from "@/services/userManagement.services";
 import { getUserById } from "@/services/userManagement.services";
 import { getUserPermissions, createUserPermission, updateUserPermission, deleteUserPermission } from "@/services/userManagement.services";
 import { useSessionQuery } from "@/hooks/useAuth";
@@ -163,20 +163,16 @@ export function useSaveUser() {
           assertManageUserBypass(session.id);
           if (typeof input.payload.is_bypass !== "boolean") throw new Error("Nilai bypass harus berupa boolean.");
         }
-        if (input.payload.role_ids !== undefined && (input.mode === "update" || input.payload.role_ids.length > 0)) {
+        if (input.payload.role_id !== undefined) {
           assertAccess(session.id, ACCESS.userAssignRoles);
         }
       };
       try {
         assertWriteAccess();
         if (input.mode === "update" && !isValidEntityId(input.id)) throw new Error("ID user tidak valid.");
-        if (input.payload.role_ids && input.payload.role_ids.length > 1) throw new Error("Pilih maksimal satu role untuk user.");
-        for (const ids of [input.payload.role_ids, input.payload.outlet_ids]) {
-          if (ids !== undefined && ids.some((id) => !isValidEntityId(id))) throw new Error("ID assignment tidak valid.");
-        }
+        if ((input.mode === "create" || Object.prototype.hasOwnProperty.call(input.payload, "role_id")) && !isValidEntityId(input.payload.role_id)) throw new Error("Pilih role yang valid untuk user.");
+        if (input.payload.outlet_ids !== undefined && input.payload.outlet_ids.some((id) => !isValidEntityId(id))) throw new Error("ID assignment outlet tidak valid.");
         if (input.mode === "update" && !Object.keys(input.payload).length) throw new Error("Tidak ada perubahan untuk disimpan.");
-        // A legacy backend must never receive an atomic-write payload it would silently ignore.
-        await requestInSession(session.id, verifyUserWriteContract);
         const result = await requestInSession(session.id, () => {
           assertWriteAccess();
           return input.mode === "create" ? createUser(input.payload) : updateUser(input.id, input.payload);
@@ -184,7 +180,7 @@ export function useSaveUser() {
         // The write is already confirmed. A read/cache failure cannot turn it into a failed save.
         let synchronizationFailed = false;
         try {
-          synchronizationFailed = await invalidate(result.data.id, input.mode === "create" || input.payload.role_ids !== undefined);
+          synchronizationFailed = await invalidate(result.data.id, input.mode === "create" || input.payload.role_id !== undefined);
           assertSession(session.id);
           if (store.getState().auth.user?.id === result.data.id) await verifySession();
         } catch { synchronizationFailed = true; }

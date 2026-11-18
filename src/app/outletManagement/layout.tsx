@@ -3,6 +3,7 @@
 import AppSidebar from "@/components/layout/AppSidebar";
 import AppHeader from "@/components/layout/AppHeader";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { RouteAccessGuard } from "@/components/auth/AccessGuard";
 
 export default function outletManagementLayout({
   children,
@@ -11,7 +12,7 @@ export default function outletManagementLayout({
 }) {
 
   return (
-    <SidebarProvider>
+    <RouteAccessGuard><SidebarProvider>
       <AppSidebar/>
       <SidebarInset>
         <AppHeader />
@@ -19,6 +20,6 @@ export default function outletManagementLayout({
           {children}
         </main>
       </SidebarInset>
-    </SidebarProvider>
+    </SidebarProvider></RouteAccessGuard>
   );
 }

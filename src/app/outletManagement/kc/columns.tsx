@@ -3,8 +3,11 @@
 import { ColumnDef } from "@tanstack/react-table";
 import DataTablesActions from "@/components/tables/DataTablesActions";
 import type { OrganizationUnit } from "@/types/organizationUnit";
+import { outletHierarchy } from "@/lib/outletManagement";
 
-export const columns: ColumnDef<OrganizationUnit>[] = [
+export const columns = (organizations: readonly OrganizationUnit[]): ColumnDef<OrganizationUnit>[] => {
+  const byId = new Map(organizations.map((organization) => [organization.id, organization]));
+  return [
   // {
   //   accessorKey: "name",
   //   header: "Nama",
@@ -27,10 +30,11 @@ export const columns: ColumnDef<OrganizationUnit>[] = [
   },
   {
     id: "kantorWilayah",
+    accessorFn: (organization) => outletHierarchy(organization.id, byId).wilayah,
     header: "Kantor Wilayah",
     size: 250,
     cell: ({ row }) => {
-      return row.original.parent?.name ?? "-";
+      return outletHierarchy(row.original.id, byId).wilayah;
     },
   },
   {
@@ -51,4 +55,5 @@ export const columns: ColumnDef<OrganizationUnit>[] = [
       />
     ),
   }
-];
+  ];
+};

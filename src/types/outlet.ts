@@ -1,94 +1,60 @@
-import { ApiResponse } from "./api";
-export interface OutletOrganizationUnit {
-  id: number;
-  name: string;
-  code: string;
-}
+import type { ApiResponse } from "./common";
 
+export const OUTLET_TYPES = ["branch", "kiosk", "atm", "agent", "office"] as const;
+export type OutletType = typeof OUTLET_TYPES[number];
+export type OutletJson = string | number | boolean | null | OutletJson[] | { [key: string]: OutletJson };
+export type OutletJsonContainer = OutletJson[] | { [key: string]: OutletJson };
+export interface OutletOrganizationUnit { id: number; name: string; code: string }
 export interface Outlet {
   id: number;
   organization_unit_id: number;
   code: string;
   name: string;
-  outlet_type: string;
-
-  address: string;
-  city: string;
-  province: string;
+  outlet_type: OutletType | null;
+  address: string | null;
+  city: string | null;
+  province: string | null;
   country: string;
-  postal_code: string;
-  phone: string;
-  email: string;
-
-  latitude: string;
-  longitude: string;
-
-  opening_date: string;
+  postal_code: string | null;
+  phone: string | null;
+  email: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  opening_date: string | null;
   closing_date: string | null;
-
   manager_user_id: number | null;
-
   is_active: boolean;
-
-  operating_hours: {
-    mon: {
-      open: string;
-      close: string;
-    } | null;
-
-    tue: {
-      open: string;
-      close: string;
-    } | null;
-
-    wed: {
-      open: string;
-      close: string;
-    } | null;
-
-    thu: {
-      open: string;
-      close: string;
-    } | null;
-
-    fri: {
-      open: string;
-      close: string;
-    } | null;
-
-    sat: {
-      open: string;
-      close: string;
-    } | null;
-
-    sun: {
-      open: string;
-      close: string;
-    } | null;
-  } | null;
-
-  metadata: {
-    capacity?: number;
-  } | null;
-
-  created_at: string;
-  updated_at: string;
-
+  operating_hours: OutletJsonContainer | null;
+  metadata: OutletJsonContainer | null;
+  created_at: string | null;
+  updated_at: string | null;
   created_by: number | null;
   updated_by: number | null;
-
   deleted_at: string | null;
-
-  organization_unit: OutletOrganizationUnit;
+  organization_unit?: OutletOrganizationUnit | null;
+  manager?: { id: number; full_name: string; email: string } | null;
 }
-
+export interface OutletCreateRequest {
+  organization_unit_id: number;
+  code: string;
+  name: string;
+  outlet_type?: OutletType | null;
+  address?: string | null;
+  city?: string | null;
+  province?: string | null;
+  country?: string;
+  postal_code?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  opening_date?: string | null;
+  closing_date?: string | null;
+  manager_user_id?: number | null;
+  is_active?: boolean;
+  operating_hours?: OutletJsonContainer | null;
+  metadata?: OutletJsonContainer | null;
+}
+export type OutletUpdateRequest = Partial<OutletCreateRequest>;
 export type OutletResponse = ApiResponse<Outlet[]>;
-// export interface OutletResponse {
-//   success: boolean;
-//   http_code: number;
-//   request_id: string | null;
-//   message: string;
-//   data: Outlet[];
-//   errors: unknown;
-//   meta: unknown;
-// }
+export type OutletDetailResponse = ApiResponse<Outlet>;

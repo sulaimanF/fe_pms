@@ -8,18 +8,18 @@ import type { OrganizationUnit } from "@/types/organizationUnit";
 
 interface KcTableProps {
   data: OrganizationUnit[];
+  organizations: readonly OrganizationUnit[];
 }
 
 export default function KcTable({
   data,
+  organizations,
 }: KcTableProps) {
   const {
     table,
-    globalFilter,
-    setGlobalFilter,
   } = useDataTable({
     data,
-    columns,
+    columns: columns(organizations),
   });
 
   return (

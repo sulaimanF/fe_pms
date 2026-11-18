@@ -11,7 +11,7 @@ import UserRolePicker from "@/components/user/UserRolePicker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateUser, useUserOutletOptions, useUserWriteRecovery } from "@/hooks/useUsers";
 import UserOutletPicker from "@/components/user/UserOutletPicker";
-import { UserWriteContractError, UserWriteUncertainError } from "@/services/userManagement.services";
+import { UserWriteUncertainError } from "@/services/userManagement.services";
 import UserWriteRecoveryNotice from "@/components/user/UserWriteRecoveryNotice";
 import { snapshotUserWrite } from "@/lib/userWriteRecovery";
 import { useRoles } from "@/hooks/useRoles";
@@ -23,7 +23,7 @@ import { applyFormFailure } from "@/lib/managementForm";
 import { buildUserCreate, createUserSchema } from "@/validations/userManagementSchema";
 import type { CreateUserFormValues } from "@/validations/userManagementSchema";
 
-const editableFields = ["username", "email", "full_name", "display_name", "phone", "password", "password_confirmation", "organization_unit_id", "is_active", "is_bypass", "role_ids", "outlet_ids"] as const;
+const editableFields = ["username", "email", "full_name", "display_name", "phone", "password", "password_confirmation", "organization_unit_id", "is_active", "is_bypass", "role_id", "outlet_ids"] as const;
 export default function CreateUserForm() {
   const router = useRouter();
   const mutation = useCreateUser();
@@ -38,10 +38,10 @@ export default function CreateUserForm() {
     resolver: zodResolver(createUserSchema),
     defaultValues: {
       username: "", email: "", full_name: "", display_name: "", phone: "", password: "", password_confirmation: "",
-      organization_unit_id: "", is_active: true, is_bypass: false, role_ids: [], outlet_ids: [],
+      organization_unit_id: "", is_active: true, is_bypass: false, role_id: "", outlet_ids: [],
     },
   });
-  const selectedRoles = useWatch({ control: form.control, name: "role_ids" }) ?? [];
+  const selectedRole = useWatch({ control: form.control, name: "role_id" }) ?? "";
   const selectedOutlets = useWatch({ control: form.control, name: "outlet_ids" }) ?? [];
   const inFlight = useRef(false);
   const mounted = useRef(true);
@@ -64,9 +64,11 @@ export default function CreateUserForm() {
     if (form.formState.dirtyFields.is_bypass && !canManageUserBypass()) {
       form.setError("root.server", { message: "Anda tidak lagi memiliki kewenangan mengubah bypass akses. Muat ulang halaman untuk memperbarui kewenangan." }); return;
     }
-    const roleIds = values.role_ids.length ? values.role_ids : undefined;
-    if (roleIds !== undefined && (!rolesReady || !canAccess(ACCESS.userAssignRoles))) {
-      form.setError("role_ids", { message: "Assignment memerlukan lookup role siap, role.viewAny dan user.update." }); return;
+    if (!rolesReady || !canAccess(ACCESS.userAssignRoles)) {
+      form.setError("role_id", { message: "Assignment memerlukan lookup role siap, role.viewAny dan user.update." }); return;
+    }
+    if (!roles.some((role) => role.id === Number(values.role_id))) {
+      form.setError("role_id", { message: "Role yang dipilih tidak tersedia." }); return;
     }
     if (values.outlet_ids.length && (!outletsReady || values.outlet_ids.some((id) => !outlets.some((outlet) => outlet.id === id)))) {
       form.setError("outlet_ids", { message: "Lookup outlet belum siap atau pilihan outlet tidak tersedia." }); return;
@@ -92,7 +94,6 @@ export default function CreateUserForm() {
     } catch (error: unknown) {
       if (!mounted.current || !isCurrentSession(context)) return;
       if (error instanceof UserWriteUncertainError) recovery.record(attempt, error);
-      else if (error instanceof UserWriteContractError) form.setError("root.server", { message: error.message });
       else applyFormFailure(form, error, editableFields);
     }
   };
@@ -230,12 +231,12 @@ export default function CreateUserForm() {
             rolesQuery.error ? <p role="alert">{isForbidden(rolesQuery.error) ? "Akses lookup role ditolak." : "Lookup role gagal dimuat."} <Button type="button" variant="outline" onClick={() => { void rolesQuery.refetch(); }}>Coba lagi</Button></p> :
             !roles.length ? <p role="status">Tidak ada role yang tersedia.</p> : null}
           {!assignmentAccess.allowed && <p role="alert">Assignment role membutuhkan user.update. Create User tidak dapat disimpan tanpa assignment role.</p>}
-          <UserRolePicker required options={roles} selectedIds={selectedRoles}
-            onChange={(ids) => form.setValue("role_ids", ids, { shouldDirty: true, shouldValidate: true })}
+          <UserRolePicker required options={roles} selectedId={selectedRole}
+            onChange={(id) => form.setValue("role_id", id, { shouldDirty: true, shouldValidate: true })}
             disabled={pending || !rolesReady || !assignmentAccess.allowed || !roles.length}
-            invalid={!!form.formState.errors.role_ids} />
+            invalid={!!form.formState.errors.role_id} />
           <p className="text-sm text-gray-500">Role terpilih berlaku untuk seluruh outlet kelolaan.</p>
-          {fieldError("role_ids")}
+          {fieldError("role_id")}
         </div>
 
         <label>Outlet Kelolaan <span className="text-red-500">*</span></label>

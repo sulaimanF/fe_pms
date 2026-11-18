@@ -7,32 +7,11 @@ import type { UserCreateRequest, UserUpdateRequest, UserResponse, UserDetailResp
 import type { UserPermissionOverride, UserPermissionsResponse, UserPermissionResponse, UserPermissionCreateRequest, UserPermissionUpdateRequest } from "@/types/userManagement";
 import { normalizeUserPermissionExpiry, userPermissionMatches } from "@/validations/userPermissionSchema";
 
-// The backend changes supplied with this task must be installed before writing.
-export const USER_WRITE_CONTRACT = "user-assignments-v1";
-export class UserWriteContractError extends Error {
-  constructor(public readonly mayHaveSaved = false, public readonly entityId?: number) {
-    super(mayHaveSaved ?
-      "Respons server belum mengonfirmasi penyimpanan User, role, dan outlet secara terpadu. Periksa data sebelum mengulang penyimpanan." :
-      "Penyimpanan User beserta assignment belum tersedia pada server. Hubungi administrator; data belum dikirim.");
-    this.name = "UserWriteContractError";
-  }
-}
-
 // Contains no Axios config, request body, or credentials. Only actual write failures use this.
 export class UserWriteUncertainError extends Error {
   constructor(public readonly entityId?: number) {
     super("Hasil penyimpanan belum dapat dipastikan. Periksa hasil sebelum mengirim penyimpanan baru.");
     this.name = "UserWriteUncertainError";
-  }
-}
-
-export async function verifyUserWriteContract() {
-  try {
-    const response = (await api.get<ApiResponse<{ contract: string }>>("/users/write-contract")).data;
-    if (response?.success !== true || response.data?.contract !== USER_WRITE_CONTRACT) throw new UserWriteContractError();
-  } catch (error: unknown) {
-    if (axios.isAxiosError(error) && error.response?.status === 404) throw new UserWriteContractError();
-    throw error;
   }
 }
 
@@ -52,17 +31,18 @@ function assignmentIds(items: unknown, kind: "roles" | "outlets"): number[] | nu
   return ids;
 }
 
-function assertAtomicUserWrite(response: UserWriteResponse, payload: UserUpdateRequest, expectedId?: number) {
-  const entity = response?.data, meta = response?.meta;
+// Current BE writes User and assignments in one transaction and returns their relations.
+// Metadata differs between create/update; verify the actual result, not a retired marker.
+function assertUserWrite(response: UserWriteResponse, payload: UserUpdateRequest, expectedId?: number) {
+  const entity = response?.data;
   const id = isValidEntityId(entity?.id) ? entity.id : undefined;
   const roles = assignmentIds(entity?.roles, "roles");
   const outlets = assignmentIds(entity?.outlets, "outlets");
   if (response?.success !== true || !id || (expectedId !== undefined && id !== expectedId) ||
-    !meta || typeof meta !== "object" || !("user_write_contract" in meta) || meta.user_write_contract !== USER_WRITE_CONTRACT ||
     roles === null || outlets === null ||
-    (payload.role_ids !== undefined && !sameAssignmentIds(payload.role_ids, roles)) ||
+    (payload.role_id !== undefined && !sameAssignmentIds([payload.role_id], roles)) ||
     (payload.outlet_ids !== undefined && !sameAssignmentIds(payload.outlet_ids, outlets))) {
-    throw new UserWriteContractError(true, id);
+    throw new UserWriteUncertainError(id);
   }
   return response;
 }
@@ -76,10 +56,9 @@ async function writeUser(payload: UserUpdateRequest, id?: number) {
       ? await api.post<UserWriteResponse>("/users", payload)
       : await api.put<UserWriteResponse>("/users/" + id, payload);
     if (response.status !== (id === undefined ? 201 : 200)) throw new UserWriteUncertainError();
-    return assertAtomicUserWrite(response.data, payload, id);
+    return assertUserWrite(response.data, payload, id);
   } catch (error: unknown) {
     if (error instanceof UserWriteUncertainError) throw error;
-    if (error instanceof UserWriteContractError && error.mayHaveSaved) throw new UserWriteUncertainError(error.entityId);
     // Only known request rejections prove that this write was refused. Other failures,
     // including response decoding failures, may follow a committed transaction.
     if (axios.isAxiosError(error) && error.response &&
@@ -103,7 +82,7 @@ export const deleteUser = async (id: number): Promise<UserDeleteResponse> => {
   }
   return response.data;
 };
-export const assignUserRoles = async (id: number, roleIds: number[]) => assertEntityResponse((await api.post<UserWriteResponse>("/users/" + id + "/roles", { role_ids: roleIds })).data);
+export const assignUserRoles = async (id: number, roleId: number) => assertEntityResponse((await api.post<UserWriteResponse>("/users/" + id + "/roles", { role_id: roleId })).data);
 
 export class UserPermissionResponseError extends Error {
   constructor(public readonly mayHaveSaved = false) {

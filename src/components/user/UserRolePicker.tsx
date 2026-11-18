@@ -6,26 +6,26 @@ import type { Role } from "@/types/role";
 interface Props {
   options: readonly Pick<Role, "id" | "name" | "code">[];
   currentRoles?: readonly Pick<Role, "id" | "name" | "code">[];
-  selectedIds: readonly number[];
-  onChange: (ids: number[]) => void;
+  selectedId: string;
+  onChange: (id: string) => void;
   disabled?: boolean;
   invalid?: boolean;
   required?: boolean;
 }
 
-export default function UserRolePicker({ options, currentRoles = [], selectedIds, onChange, disabled, invalid, required = false }: Props) {
-  const hasMultipleRoles = selectedIds.length > 1;
-  const currentRole = selectedIds.length === 1 ? currentRoles.find((role) => role.id === selectedIds[0]) : undefined;
+export default function UserRolePicker({ options, currentRoles = [], selectedId, onChange, disabled, invalid, required = false }: Props) {
+  const hasMultipleRoles = !selectedId && new Set(currentRoles.map((role) => role.id)).size > 1;
+  const currentRole = currentRoles.find((role) => String(role.id) === selectedId);
   const missingCurrentRole = currentRole && !options.some((role) => role.id === currentRole.id) ? currentRole : undefined;
-  const value = hasMultipleRoles ? "" : selectedIds.length === 1 ? String(selectedIds[0]) : required ? "" : "none";
+  const value = selectedId || (required ? "" : "none");
 
   return (
     <div className="space-y-2">
       <Select required={required} disabled={disabled} value={value} onValueChange={(nextValue) => {
         if (disabled) return;
-        if (nextValue === "none") { if (!required) onChange([]); return; }
+        if (nextValue === "none") { if (!required) onChange(""); return; }
         const role = options.find((item) => String(item.id) === nextValue);
-        if (role) onChange([role.id]);
+        if (role) onChange(String(role.id));
       }}>
         <SelectTrigger id="user-roles" className="w-full" aria-invalid={invalid || hasMultipleRoles}
           aria-required={required || undefined}

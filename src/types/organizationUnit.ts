@@ -30,8 +30,43 @@ export interface OrganizationUnit {
   updated_by: number | null;
   deleted_at: string | null;
   parent?: OrganizationParent | null;
+  children?: Pick<OrganizationUnit, "id" | "name" | "code" | "unit_type">[];
   jumlah_kc?: number;
   jumlah_kcp?: number;
+}
+
+export type ManagedOrganizationType = "wilayah" | "cabang";
+export interface OrganizationWriteRequest {
+  code?: string;
+  name?: string;
+  unit_type?: ManagedOrganizationType;
+  parent_id?: number | null;
+  province?: string | null;
+  city?: string | null;
+  is_active?: boolean;
+}
+export interface OrganizationCreateRequest extends OrganizationWriteRequest {
+  code: string;
+  name: string;
+  unit_type: ManagedOrganizationType;
+}
+export interface OutletRelationChange {
+  entity: "organization" | "outlet";
+  id: number;
+  name: string;
+  // "saved" resolves to the ID confirmed by the primary save; null only for optional organization parents.
+  parentId: "saved" | number | null;
+}
+export interface OrganizationSaveAttempt {
+  id?: number;
+  create?: OrganizationCreateRequest;
+  update?: OrganizationWriteRequest;
+  primaryConfirmed: boolean;
+  remaining: OutletRelationChange[];
+  message?: string;
+  uncertain: boolean;
+  issue?: string;
+  synchronizationFailed?: boolean;
 }
 
 export interface OrganizationPagination {

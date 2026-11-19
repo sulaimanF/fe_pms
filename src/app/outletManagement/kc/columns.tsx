@@ -7,6 +7,7 @@ import { outletHierarchy } from "@/lib/outletManagement";
 
 export const columns = (
   organizations: readonly OrganizationUnit[],
+  canEdit:boolean,
 ): ColumnDef<OrganizationUnit>[] => {
   const byId = new Map(
     organizations.map((organization) => [organization.id, organization]),
@@ -38,7 +39,7 @@ export const columns = (
       enableHiding: false,
       size: 150,
       cell: ({ row }) => (
-        <DataTablesActions variant="inline" row={row.original} unavailable />
+        <DataTablesActions variant="inline" row={row.original} editHref={canEdit?`/outletManagement/organization/update/${row.original.id}`:undefined} />
       ),
     },
   ];

@@ -33,6 +33,11 @@ export const ACCESS = {
   outletCreate: ["outlet.create"],
   outletUpdate: ["outlet.view", "outlet.update"],
   outletDelete: ["outlet.delete"],
+  // Verified organization catalog codes; BE apiResource routes do not yet enforce them.
+  organizationList: ["org-unit.viewAny"],
+  organizationDetail: ["org-unit.view"],
+  organizationCreate: ["org-unit.create"],
+  organizationUpdate: ["org-unit.view", "org-unit.update"],
   permissionCatalog: ["permission.viewAny"],
   menuCatalog: ["menu.viewAny"],
 } as const;
@@ -107,7 +112,9 @@ export function getRoutePermissions(
   if (path === "/userManagement/create") return ACCESS.userCreate;
   if (/^\/userManagement\/update\/[^/]+$/.test(path)) return ACCESS.userUpdate;
   if (path === "/outletManagement") return ACCESS.outletList;
-  if (path === "/outletManagement/create") return ACCESS.outletCreate;
+  // The create entry selects an entity; each independent form has its own permission guard.
+  if (path === "/outletManagement/create") return ACCESS.dashboard;
+  if (/^\/outletManagement\/organization\/update\/[^/]+$/.test(path)) return ACCESS.organizationUpdate;
   if (/^\/outletManagement\/update\/[^/]+$/.test(path))
     return ACCESS.outletUpdate;
   return null;

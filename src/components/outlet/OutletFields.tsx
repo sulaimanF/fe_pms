@@ -1,212 +1,34 @@
 "use client";
-
 import { Controller } from "react-hook-form";
 import type { UseFormReturn } from "react-hook-form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OUTLET_TYPES } from "@/types/outlet";
 import type { OutletFormValues } from "@/validations/outletSchema";
-import type { OrganizationUnit } from "@/types/organizationUnit";
-import { isForbidden } from "@/lib/authorization";
-
-interface Props {
-  form: UseFormReturn<OutletFormValues>;
-  organizations: readonly OrganizationUnit[];
-  loading: boolean;
-  error: unknown;
-  onRetry: () => void;
-  currentOrganization?: { id: number; name: string };
-}
-// Presentational fields only. Create and Update own initialization, validation and submission.
-export default function OutletFields({
-  form,
-  organizations,
-  loading,
-  error,
-  onRetry,
-  currentOrganization,
-}: Props) {
-  const fieldError = (name: keyof OutletFormValues) => (
-    <p role="alert" className="text-sm text-red-600">
-      {form.formState.errors[name]?.message}
-    </p>
-  );
-  return (
-    <>
-      <label htmlFor="outlet-name">
-        Nama <span className="text-red-500">*</span>
-      </label>
-      <div>
-        <Input id="outlet-name" maxLength={255} {...form.register("name")} />
-        {fieldError("name")}
-      </div>
-      <label htmlFor="outlet-organization">
-        Organisasi <span className="text-red-500">*</span>
-      </label>
-      <div>
-        {loading ? (
-          <p role="status">Memuat seluruh organisasi...</p>
-        ) : error ? (
-          <p role="alert">
-            {isForbidden(error)
-              ? "Akses lookup organisasi ditolak."
-              : "Lookup organisasi gagal dimuat."}{" "}
-            <Button type="button" variant="outline" onClick={onRetry}>
-              Coba lagi
-            </Button>
-          </p>
-        ) : !organizations.length ? (
-          <p role="status">Tidak ada organisasi tersedia.</p>
-        ) : null}
-        <Controller
-          control={form.control}
-          name="organization_unit_id"
-          render={({ field }) => (
-            <Select
-              value={field.value}
-              onValueChange={field.onChange}
-              disabled={loading || !!error}
-            >
-              <SelectTrigger
-                id="outlet-organization"
-                aria-required="true"
-                className="w-full"
-              >
-                <SelectValue placeholder="Pilih organisasi" />
-              </SelectTrigger>
-              <SelectContent>
-                {currentOrganization &&
-                  !organizations.some(
-                    (item) => item.id === currentOrganization.id,
-                  ) && (
-                    <SelectItem value={String(currentOrganization.id)}>
-                      {currentOrganization.name} (saat ini)
-                    </SelectItem>
-                  )}
-                {organizations.map((item) => (
-                  <SelectItem key={item.id} value={String(item.id)}>
-                    {item.name} ({item.unit_type})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        />
-        {fieldError("organization_unit_id")}
-      </div>
-      <label htmlFor="outlet-type">Jenis Outlet</label>
-      <div>
-        <Controller
-          control={form.control}
-          name="outlet_type"
-          render={({ field }) => (
-            <Select
-              value={field.value || "none"}
-              onValueChange={(value) =>
-                field.onChange(value === "none" ? "" : value)
-              }
-            >
-              <SelectTrigger id="outlet-type" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Tidak ditentukan</SelectItem>
-                {OUTLET_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        />
-        {fieldError("outlet_type")}
-      </div>
-      {(
-        [
-          ["address", "Alamat", undefined, "text"],
-          ["city", "Kota", 100, "text"],
-          ["province", "Provinsi", 100, "text"],
-          ["country", "Negara", 100, "text"],
-          ["postal_code", "Kode pos", 20, "text"],
-          ["phone", "Telepon", 50, "tel"],
-          ["email", "Email", undefined, "email"],
-          ["latitude", "Latitude (-90–90)", undefined, "text"],
-          ["longitude", "Longitude (-180–180)", undefined, "text"],
-          ["opening_date", "Tanggal buka", undefined, "date"],
-          ["closing_date", "Tanggal tutup", undefined, "date"],
-          ["manager_user_id", "Manager User ID", undefined, "text"],
-        ] as const
-      ).map(([name, label, maxLength, type]) => (
-        <div key={name} className="contents">
-          <label htmlFor={`outlet-${name}`}>{label}</label>
-          <div>
-            <Input
-              id={`outlet-${name}`}
-              type={type}
-              maxLength={maxLength}
-              {...form.register(name)}
-            />
-            {fieldError(name)}
-            {name === "manager_user_id" && (
-              <p className="text-sm text-muted-foreground">
-                Opsional. Menunjuk User manager; tidak membuat assignment User
-                ke Outlet.
-              </p>
-            )}
-          </div>
-        </div>
-      ))}
-      <label htmlFor="outlet-status">Status</label>
-      <div>
-        <Controller
-          control={form.control}
-          name="is_active"
-          render={({ field }) => (
-            <Select
-              value={field.value ? "active" : "inactive"}
-              onValueChange={(value) => field.onChange(value === "active")}
-            >
-              <SelectTrigger id="outlet-status" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        />
-        {fieldError("is_active")}
-      </div>
-      {(["operating_hours", "metadata"] as const).map((name) => (
-        <div key={name} className="contents">
-          <label htmlFor={`outlet-${name}`}>
-            {name === "operating_hours"
-              ? "Jam operasional (JSON)"
-              : "Metadata (JSON)"}
-          </label>
-          <div>
-            <textarea
-              id={`outlet-${name}`}
-              rows={4}
-              className="w-full rounded-md border px-3 py-2 text-sm"
-              {...form.register(name)}
-            />
-            {fieldError(name)}
-            <p className="text-sm text-muted-foreground">
-              Opsional, gunakan object/array JSON sesuai data backend.
-            </p>
-          </div>
-        </div>
-      ))}
-    </>
-  );
+// Fields only. Each form owns its own initialization, draft and Save workflow.
+export default function OutletFields({ form }: {
+    form: UseFormReturn<OutletFormValues>;
+}) {
+    const error = (name: keyof OutletFormValues) => <p id={`outlet-${name}-error`} role="alert" className="text-xs text-red-600">{form.formState.errors[name]?.message}</p>;
+    const input = (name: keyof Pick<OutletFormValues, "name" | "province" | "city" | "latitude" | "longitude">, label: string, length?: number) => <div key={name}>
+    <label htmlFor={`outlet-${name}`} className="mb-1 block text-sm">{label}{name === "name" && <span className="text-red-600"> *</span>}</label>
+    <Input id={`outlet-${name}`} maxLength={length} required={name === "name"} aria-invalid={!!form.formState.errors[name]} aria-describedby={`outlet-${name}-error`} {...form.register(name)}/>{error(name)}
+  </div>;
+    return <>
+    {input("name", "Nama", 255)}
+    {input("province", "Provinsi", 100)}
+    {input("city", "Kota", 100)}
+    <div><label htmlFor="outlet-district" className="mb-1 block text-sm">Kecamatan</label><Input id="outlet-district" disabled placeholder="Belum didukung backend"/></div>
+    <p className="text-xs text-muted-foreground">Provinsi dan Kota diisi sebagai teks. Lookup lokasi dan field Kecamatan belum tersedia.</p>
+    {input("latitude", "Latitude (-90 sampai 90)")}
+    {input("longitude", "Longitude (-180 sampai 180)")}
+    <div><label htmlFor="outlet-status" className="mb-1 block text-sm">Status</label>
+      <Controller control={form.control} name="is_active" render={({ field }) => <Select value={field.value ? "active" : "inactive"} onValueChange={value => field.onChange(value === "active")}><SelectTrigger id="outlet-status" className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select>}/>{error("is_active")}
+    </div>
+    <details className="space-y-4 border-t pt-3"><summary className="cursor-pointer text-sm font-medium">Informasi tambahan Outlet</summary>
+      <div><label htmlFor="outlet-type" className="mb-1 block text-sm">Jenis layanan Outlet</label><Controller control={form.control} name="outlet_type" render={({ field }) => <Select value={field.value || "none"} onValueChange={value => field.onChange(value === "none" ? "" : value)}><SelectTrigger id="outlet-type" className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Tidak ditentukan</SelectItem>{OUTLET_TYPES.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select>}/>{error("outlet_type")}</div>
+      {([["address", "Alamat", undefined, "text"], ["country", "Negara", 100, "text"], ["postal_code", "Kode pos", 20, "text"], ["phone", "Telepon", 50, "tel"], ["email", "Email", undefined, "email"], ["opening_date", "Tanggal buka", undefined, "date"], ["closing_date", "Tanggal tutup", undefined, "date"], ["manager_user_id", "Manager User ID", undefined, "text"]] as const).map(([name, label, maxLength, type]) => <div key={name}><label htmlFor={`outlet-${name}`} className="mb-1 block text-sm">{label}</label><Input id={`outlet-${name}`} type={type} maxLength={maxLength} {...form.register(name)}/>{error(name)}</div>)}
+      {(["operating_hours", "metadata"] as const).map(name => <div key={name}><label htmlFor={`outlet-${name}`} className="mb-1 block text-sm">{name === "metadata" ? "Metadata (JSON)" : "Jam operasional (JSON)"}</label><textarea id={`outlet-${name}`} rows={4} className="w-full rounded-md border p-3 text-sm" {...form.register(name)}/>{error(name)}</div>)}
+    </details>
+  </>;
 }

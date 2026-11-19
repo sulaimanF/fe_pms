@@ -230,7 +230,7 @@ function OutletManagementContent() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Outlet Management</h1>
-        {access.can(ACCESS.outletCreate) && (
+        {(access.can(ACCESS.outletCreate)||access.can(ACCESS.organizationCreate)) && (
           <Button asChild className="bg-blue-600 hover:bg-blue-700">
             <Link href="/outletManagement/create">
               <Plus className="mr-2 h-4 w-4" />
@@ -262,9 +262,9 @@ function OutletManagementContent() {
         </div>
       )}
       <p className="text-sm text-muted-foreground">
-        Master Outlet mencakup seluruh jenis dari backend, belum ada pemetaan
-        bisnis KCP. Jumlah KC/KCP pada tabel organisasi tetap mengikuti agregasi
-        backend.
+        Wilayah dan KC merupakan organisasi. KCP menggunakan master Outlet yang
+        terhubung ke KC; jenis layanan Outlet tetap mengikuti backend. Jumlah
+        KC/KCP pada tabel organisasi mengikuti agregasi backend.
       </p>
       <WilayahTable data={wilayah} />
       <KcTable data={cabang} organizations={organizations} />

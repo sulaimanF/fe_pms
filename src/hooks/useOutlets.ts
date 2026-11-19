@@ -33,7 +33,7 @@ export const useOutlets = (organizationUnitId?: number) => {
   });
 };
 
-export const useAllOutlets = () => {
+export const useAllOutlets = (enabled = true) => {
   const session = useSessionQuery();
   const access = useAuthorization(ACCESS.outletList);
   return useQuery({
@@ -44,7 +44,7 @@ export const useAllOutlets = () => {
         assertAccess(session.id, ACCESS.outletList);
         return getAllOutlets(undefined, signal);
       }),
-    enabled: session.enabled && access.allowed,
+    enabled: enabled && session.enabled && access.allowed,
   });
 };
 
@@ -82,7 +82,7 @@ async function synchronizeOutlet(
         query.meta?.scope !== "global" &&
         key[0] === "session" &&
         key[1] === sessionId &&
-        (["outlets", "organization-units", "users", "user"].includes(
+        (["outlets", "organization-units", "organization-unit", "users", "user"].includes(
           String(key[2]),
         ) ||
           (key[2] === "outlet" && key[3] === id))
@@ -106,6 +106,7 @@ async function synchronizeOutlet(
         const resource = query.queryKey[2];
         if (resource === "users") return canAccess(ACCESS.userList);
         if (resource === "user") return canAccess(ACCESS.userDetail);
+        if (resource === "organization-unit") return canAccess(ACCESS.organizationDetail);
         if (resource === "outlet")
           return !deleted && canAccess(ACCESS.outletDetail);
         if (resource === "outlets" && query.queryKey[3] !== "user-lookup")

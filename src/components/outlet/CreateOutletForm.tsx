@@ -7,10 +7,12 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import OutletFields from "./OutletFields";
 import OutletWriteNotice from "./OutletWriteNotice";
 import { useCreateOutlet, useCheckOutletWrite } from "@/hooks/useOutlets";
-import { useOrganizationUnits } from "@/hooks/useOrganizationUnits";
+import { useOutletOrganizationLookup } from "@/hooks/useOutletOrganizations";
+import OutletParentPanel from "./OutletParentPanel";
 import { ACCESS, canAccess, isForbidden } from "@/lib/authorization";
 import { captureSession, isCurrentSession } from "@/lib/session";
 import { applyFormFailure } from "@/lib/managementForm";
@@ -24,11 +26,11 @@ import {
 import type { OutletFormValues } from "@/validations/outletSchema";
 import type { OutletCreateRequest } from "@/types/outlet";
 
-export default function CreateOutletForm() {
+export default function CreateOutletForm({renderKindPicker}:{renderKindPicker:(disabled:boolean)=>React.ReactNode}) {
   const router = useRouter();
   const mutation = useCreateOutlet();
   const checkResult = useCheckOutletWrite();
-  const organizations = useOrganizationUnits(true);
+  const organizations = useOutletOrganizationLookup();
   const form = useForm<OutletFormValues>({
     resolver: zodResolver(createOutletSchema),
     defaultValues: emptyOutlet,
@@ -61,9 +63,10 @@ export default function CreateOutletForm() {
     }
     if (
       !organizations.data ||
+      organizations.denied ||
       organizations.error ||
       !organizations.data.data.some(
-        (item) => item.id === Number(values.organization_unit_id),
+        (item) => item.id === Number(values.organization_unit_id) && item.unit_type === "cabang",
       )
     ) {
       form.setError("organization_unit_id", {
@@ -124,7 +127,7 @@ export default function CreateOutletForm() {
   };
   return (
     <form
-      className="max-w-3xl space-y-8"
+      className="space-y-6"
       aria-busy={pending}
       onSubmit={async (event) => {
         event.preventDefault();
@@ -137,7 +140,6 @@ export default function CreateOutletForm() {
         }
       }}
     >
-      <h1 className="text-2xl font-bold">Create Outlet</h1>
       {form.formState.errors.root?.server && (
         <p role="alert">{form.formState.errors.root.server.message}</p>
       )}
@@ -155,8 +157,11 @@ export default function CreateOutletForm() {
       )}
       <fieldset
         disabled={pending || saved}
-        className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-[180px_1fr]"
+        className="grid min-w-0 grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
       >
+        <Card className="rounded-2xl bg-white py-6 shadow-lg"><CardContent className="space-y-4">
+        {renderKindPicker(pending || saved || !!uncertain)}
+        <div>
         <label htmlFor="outlet-code">
           Kode <span className="text-red-500">*</span>
         </label>
@@ -166,30 +171,21 @@ export default function CreateOutletForm() {
             {form.formState.errors.code?.message}
           </p>
         </div>
-        <OutletFields
-          form={form}
-          organizations={organizations.data?.data ?? []}
-          loading={organizations.isLoading}
-          error={organizations.error}
-          onRetry={() => {
-            void organizations.refetch();
-          }}
-        />
+        </div>
+        <OutletFields form={form}/>
+        </CardContent></Card>
+        <OutletParentPanel form={form} units={organizations.data?.data??[]} loading={organizations.isLoading} error={organizations.error} denied={organizations.denied} onRetry={()=>{void organizations.refetch();}} disabled={pending||saved||!!uncertain}/>
       </fieldset>
-      <p className="text-sm text-muted-foreground">
-        Negara kosong menggunakan default database backend. Status dan manager
-        berbeda dari assignment User ke Outlet.
-      </p>
       <div className="flex justify-end gap-4">
         <Button
           type="button"
-          variant="outline"
+          className="min-w-28 bg-gray-200 text-black hover:bg-gray-300"
           disabled={pending}
           onClick={() => router.push(destination())}
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={pending || !!uncertain || saved}>
+        <Button type="submit" className="min-w-28 bg-blue-600 text-white hover:bg-blue-700" disabled={pending || !!uncertain || saved}>
           {pending ? "Memproses..." : "Save"}
         </Button>
       </div>

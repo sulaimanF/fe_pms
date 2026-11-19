@@ -6,9 +6,17 @@ import api from "@/lib/axios";
 import React, { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { captureSession, isCurrentSession, setSessionStatus } from "@/lib/session";
+import {
+  captureSession,
+  isCurrentSession,
+  setSessionStatus,
+} from "@/lib/session";
 import type { SessionContext } from "@/lib/session";
-import { acceptSessionCredentials, endSession, revokeLoginAttempt } from "@/lib/sessionLifecycle";
+import {
+  acceptSessionCredentials,
+  endSession,
+  revokeLoginAttempt,
+} from "@/lib/sessionLifecycle";
 import { persistor } from "@/store/store";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
@@ -23,7 +31,12 @@ import type { ApiResponse } from "@/types/common";
 import { getMe, readOtpCredentials } from "@/services/auth.services";
 import { isMeResponse } from "@/lib/sessionVerification";
 
-type LoginStage = "idle" | "verifying" | "loading-profile" | "authenticated" | "failed";
+type LoginStage =
+  | "idle"
+  | "verifying"
+  | "loading-profile"
+  | "authenticated"
+  | "failed";
 
 export default function OtpForm() {
   const router = useRouter();
@@ -32,7 +45,9 @@ export default function OtpForm() {
   const requestInFlight = useRef(false);
   useEffect(() => {
     mounted.current = true;
-    return () => { mounted.current = false; };
+    return () => {
+      mounted.current = false;
+    };
   }, []);
 
   const {
@@ -76,7 +91,7 @@ export default function OtpForm() {
     const updateTimer = () => {
       const remaining = Math.max(
         0,
-        Math.floor((expired_at - Date.now()) / 1000)
+        Math.floor((expired_at - Date.now()) / 1000),
       );
 
       setTimeLeft(remaining);
@@ -129,18 +144,23 @@ export default function OtpForm() {
       const response = await api.post<ApiResponse<OtpVerificationResponse>>(
         verifyEndpoint,
         payload,
-        { sessionContext: context }
+        { sessionContext: context },
       );
 
       // Capture a received token even if validation or component ownership fails.
       otpResponseReceived = true;
       const candidate = response.data?.data?.token;
-      issuedToken = typeof candidate === "string" && candidate.trim() ? candidate : null;
+      issuedToken =
+        typeof candidate === "string" && candidate.trim() ? candidate : null;
       const authData = readOtpCredentials(response.data);
       if (!mounted.current || !isCurrentSession(context)) return;
       // acceptSessionCredentials now owns revocation if adoption fails.
       issuedToken = null;
-      const nextSession = await acceptSessionCredentials(context, authData.token, authData.token_type);
+      const nextSession = await acceptSessionCredentials(
+        context,
+        authData.token,
+        authData.token_type,
+      );
       if (!nextSession) return;
       context = nextSession;
       profileSession = nextSession;
@@ -162,7 +182,7 @@ export default function OtpForm() {
           permissions: me.data.permissions,
           menu: me.data.menu,
           capabilities: me.data.capabilities,
-        })
+        }),
       );
 
       await persistor.flush();
@@ -173,15 +193,18 @@ export default function OtpForm() {
       toast.success(response.data.message);
 
       router.replace("/dashboard");
-
     } catch (error) {
       // Profile failures are handled by the rollback below, not as retryable OTP errors.
       if (profileSession || otpResponseReceived) return;
-      if (!mounted.current || !isCurrentSession(context) || axios.isCancel(error)) return;
+      if (
+        !mounted.current ||
+        !isCurrentSession(context) ||
+        axios.isCancel(error)
+      )
+        return;
       if (axios.isAxiosError(error)) {
         toast.error(
-          error.response?.data?.message ??
-            "Tidak dapat terhubung ke server."
+          error.response?.data?.message ?? "Tidak dapat terhubung ke server.",
         );
       } else {
         toast.error("Terjadi kesalahan.");
@@ -192,17 +215,32 @@ export default function OtpForm() {
           // Also runs after unmount; never leave an accepted credential without a profile.
           if (mounted.current && isCurrentSession(profileSession)) {
             setStage("failed");
-            toast.error("Verifikasi OTP berhasil, tetapi data akun gagal dimuat. Silakan login kembali untuk mendapatkan OTP baru.");
+            toast.error(
+              "Verifikasi OTP berhasil, tetapi data akun gagal dimuat. Silakan login kembali untuk mendapatkan OTP baru.",
+            );
           }
-          await endSession({ reason: "login-rollback", context: profileSession });
+          await endSession({
+            reason: "login-rollback",
+            context: profileSession,
+          });
         } else if (issuedToken) {
           if (mounted.current && isCurrentSession(context)) {
-            toast.error("Respons verifikasi login tidak dapat digunakan. Silakan login kembali untuk mendapatkan OTP baru.");
-            await endSession({ reason: "login-rollback", context, rollbackToken: issuedToken });
+            toast.error(
+              "Respons verifikasi login tidak dapat digunakan. Silakan login kembali untuk mendapatkan OTP baru.",
+            );
+            await endSession({
+              reason: "login-rollback",
+              context,
+              rollbackToken: issuedToken,
+            });
           } else {
             void revokeLoginAttempt(issuedToken, context.id);
           }
-        } else if (otpResponseReceived && !authenticated && isCurrentSession(context)) {
+        } else if (
+          otpResponseReceived &&
+          !authenticated &&
+          isCurrentSession(context)
+        ) {
           // An unusable successful OTP response may already have consumed the code.
           await endSession({ reason: "login-rollback", context });
         }
@@ -236,7 +274,7 @@ export default function OtpForm() {
         {
           login,
         },
-        { sessionContext: context }
+        { sessionContext: context },
       );
       if (!mounted.current || !isCurrentSession(context)) return;
 
@@ -244,19 +282,22 @@ export default function OtpForm() {
         setResendOtpData({
           expires_in: response.data.data.expires_in,
           sent_to: response.data.data.sent_to,
-        })
+        }),
       );
 
       reset({ otp: "" });
 
       toast.success(response.data.message);
-      
     } catch (error) {
-      if (!mounted.current || !isCurrentSession(context) || axios.isCancel(error)) return;
+      if (
+        !mounted.current ||
+        !isCurrentSession(context) ||
+        axios.isCancel(error)
+      )
+        return;
       if (axios.isAxiosError(error)) {
         toast.error(
-          error.response?.data?.message ??
-            "Tidak dapat terhubung ke server."
+          error.response?.data?.message ?? "Tidak dapat terhubung ke server.",
         );
       } else {
         toast.error("Terjadi kesalahan.");
@@ -283,7 +324,9 @@ export default function OtpForm() {
           </div>
           <div>
             <form
-              onSubmit={(event) => { void handleSubmit(handleVerifyOtp)(event); }}
+              onSubmit={(event) => {
+                void handleSubmit(handleVerifyOtp)(event);
+              }}
               aria-busy={loading || resending}
               data-auth-stage={stage}
             >
@@ -305,7 +348,6 @@ export default function OtpForm() {
                   yang diterima pada kolom di bawah.
                 </p>
               </div>
-              
 
               {/* OTP Input */}
               <div className="mb-5">
@@ -363,7 +405,7 @@ export default function OtpForm() {
                 <p className="text-[22px] font-bold text-gray-700">
                   {minutes} menit {seconds.toString().padStart(2, "0")} detik
                 </p>
-              </div>  
+              </div>
               {/* Timer */}
 
               {/* Button Submit OTP */}
@@ -372,12 +414,15 @@ export default function OtpForm() {
                   type="submit"
                   disabled={loading || resending || isExpired}
                   className="h-[55px] w-full rounded-2xl bg-[#0D5EF4] text-lg font-bold text-white hover:bg-[#0B4ED0]"
-              >
+                >
                   {loading
-                    ? stage === "loading-profile" ? "Memuat data akun..."
-                      : stage === "failed" ? "Menyiapkan login ulang..." : "Memverifikasi..."
+                    ? stage === "loading-profile"
+                      ? "Memuat data akun..."
+                      : stage === "failed"
+                        ? "Menyiapkan login ulang..."
+                        : "Memverifikasi..."
                     : "VERIFIKASI OTP"}
-              </Button>
+                </Button>
               </div>
               {/* Button Submit OTP */}
 
@@ -412,7 +457,7 @@ export default function OtpForm() {
               </div>
               {/* Button Resend OTP */}
             </form>
-          </div>  
+          </div>
         </CardContent>
       </Card>
     </div>

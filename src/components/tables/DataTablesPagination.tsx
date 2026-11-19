@@ -1,12 +1,16 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 
-import type {
-  DataTablesPaginationProps,
-} from "./types";
+import type { DataTablesPaginationProps } from "./types";
 
 export default function DataTablesPagination<TData>({
   table,
@@ -15,9 +19,7 @@ export default function DataTablesPagination<TData>({
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-end">
       {/* Rows Per Page */}
       <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">
-          Rows per page
-        </span>
+        <span className="text-sm text-muted-foreground">Rows per page</span>
 
         <Select
           value={`${table.getState().pagination.pageSize}`}
@@ -30,21 +32,13 @@ export default function DataTablesPagination<TData>({
           </SelectTrigger>
 
           <SelectContent>
-            <SelectItem value="10">
-              10
-            </SelectItem>
+            <SelectItem value="10">10</SelectItem>
 
-            <SelectItem value="20">
-              20
-            </SelectItem>
+            <SelectItem value="20">20</SelectItem>
 
-            <SelectItem value="50">
-              50
-            </SelectItem>
+            <SelectItem value="50">50</SelectItem>
 
-            <SelectItem value="100">
-              100
-            </SelectItem>
+            <SelectItem value="100">100</SelectItem>
           </SelectContent>
         </Select>
       </div>

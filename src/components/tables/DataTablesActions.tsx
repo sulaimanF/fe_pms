@@ -32,7 +32,28 @@ export default function DataTablesActions<TData>({
   onDelete,
   onPermissions,
 }: DataTablesActionsProps<TData>) {
-  if (unavailable) return <div className="flex items-center gap-1"><Button disabled variant="ghost" size="icon" title="Edit belum tersedia"><Pencil className="h-4 w-4" /></Button><Button disabled variant="ghost" size="icon" title="Delete belum tersedia"><Trash2 className="h-4 w-4" /></Button><span className="text-xs text-gray-500">Belum tersedia</span></div>;
+  if (unavailable)
+    return (
+      <div className="flex items-center gap-1">
+        <Button
+          disabled
+          variant="ghost"
+          size="icon"
+          title="Edit belum tersedia"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+        <Button
+          disabled
+          variant="ghost"
+          size="icon"
+          title="Delete belum tersedia"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+        <span className="text-xs text-gray-500">Belum tersedia</span>
+      </div>
+    );
 
   const inlineActions = (
     <div className="flex items-center gap-1">
@@ -48,12 +69,7 @@ export default function DataTablesActions<TData>({
       )}
 
       {editHref ? (
-        <Button
-          asChild
-          variant="ghost"
-          size="icon"
-          title="Edit"
-        >
+        <Button asChild variant="ghost" size="icon" title="Edit">
           <Link href={editHref}>
             <Pencil className="h-4 w-4 text-blue-600 hover:text-blue-700" />
           </Link>
@@ -98,22 +114,15 @@ export default function DataTablesActions<TData>({
 
   const dropdownActions = (
     <DropdownMenu>
-
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-        >
+        <Button variant="ghost" size="icon">
           <MoreHorizontal className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end">
-
         {onView && (
-          <DropdownMenuItem
-            onClick={() => onView(row)}
-          >
+          <DropdownMenuItem onClick={() => onView(row)}>
             <Eye className="mr-2 h-4 w-4 text-green-600" />
             View Detail
           </DropdownMenuItem>
@@ -128,9 +137,7 @@ export default function DataTablesActions<TData>({
           </DropdownMenuItem>
         ) : (
           onEdit && (
-            <DropdownMenuItem
-              onClick={() => onEdit(row)}
-            >
+            <DropdownMenuItem onClick={() => onEdit(row)}>
               <Pencil className="mr-2 h-4 w-4 text-blue-600" />
               Edit
             </DropdownMenuItem>
@@ -155,7 +162,5 @@ export default function DataTablesActions<TData>({
       </DropdownMenuContent>
     </DropdownMenu>
   );
-  return variant === "inline"
-  ? inlineActions
-  : dropdownActions;
+  return variant === "inline" ? inlineActions : dropdownActions;
 }

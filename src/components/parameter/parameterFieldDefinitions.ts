@@ -1,18 +1,205 @@
 import { QUESTION_TYPES } from "@/types/parameterPenilaian";
 import type { ParameterField } from "./ParameterFields";
 
-const code:ParameterField={name:"code",label:"Kode",required:true,maxLength:50};
-const name:ParameterField={name:"name",label:"Nama",required:true,maxLength:150};
-const order:ParameterField={name:"sort_order",label:"Urutan",required:true};
-const active:ParameterField={name:"is_active",label:"Aktif",kind:"boolean"};
-const survey:ParameterField={name:"survey_module_id",label:"Survey Module",required:true,readOnly:true};
-const conditionHelp='JSON: {"question":"Q_CODE","operator":"equals","value":"YES"}, atau {"all":[...]} / {"any":[...]}. Pemeriksaan referensi lintas pertanyaan dilakukan backend saat publish.';
-const numericHelp="Gunakan titik dan maksimal dua desimal. Nilai dikirim sebagai string numeric untuk menjaga presisi.";
-export const sectionFields:ParameterField[]=[survey,code,name,{name:"description",label:"Deskripsi",kind:"textarea"},order,active,{name:"visible_if",label:"Kondisi tampil (JSON)",kind:"textarea",help:conditionHelp}];
-export const configurationFields:ParameterField[]=[{name:"assessment_period_id",label:"Periode Penilaian",required:true,readOnly:true},{name:"weight",label:"Bobot section (%)",required:true,help:"0–100; nilai 0 valid. Ini bukan bobot pertanyaan pada weighted_average."},{name:"target_score",label:"Target",help:numericHelp},{name:"minimum_score",label:"Minimum",help:numericHelp},{name:"maximum_score",label:"Maksimum",help:numericHelp},active];
-export const periodFields:ParameterField[]=[{name:"year",label:"Tahun",required:true},{name:"quarter",label:"Quarter",required:true,kind:"select",options:["1","2","3","4"].map(value=>({value,label:"Q"+value}))},{name:"start_date",label:"Tanggal mulai",required:true,kind:"date"},{name:"end_date",label:"Tanggal akhir",required:true,kind:"date"},{name:"status",label:"Status",kind:"select",options:["draft","active","closed"].map(value=>({value,label:value}))}];
-export const questionFields:ParameterField[]=[survey,{name:"parameter_section_id",label:"Section",required:true,readOnly:true},code,{name:"type",label:"Jenis pertanyaan",required:true,kind:"select",options:QUESTION_TYPES.map(value=>({value,label:value}))},{name:"question_text",label:"Pertanyaan",required:true,kind:"textarea"},{name:"help_text",label:"Bantuan",kind:"textarea"},{name:"placeholder",label:"Placeholder",maxLength:255},{name:"default_value",label:"Nilai awal (teks)",help:"Array/map dapat disimpan sebagai teks JSON; bukan evaluator."},{name:"error_message",label:"Pesan error",maxLength:255},{name:"weight",label:"Bobot pertanyaan",required:true,help:"Digunakan weighted_average; berbeda dari bobot section (%) pada internal_score."},order,active,{name:"is_required",label:"Wajib dijawab",kind:"boolean"},{name:"is_dynamic",label:"Pertanyaan dinamis",kind:"boolean"},{name:"settings",label:"Settings (JSON)",kind:"textarea",help:"Sesuai QuestionFormRules: min/max, rows, file limits, options_source yang terdaftar. Backend memvalidasi struktur rinci."},{name:"validation_rules",label:"Validasi jawaban (JSON)",kind:"textarea"},{name:"visible_if",label:"Kondisi tampil (JSON)",kind:"textarea",help:conditionHelp},{name:"required_if",label:"Kondisi wajib (JSON)",kind:"textarea",help:conditionHelp}];
-export const optionFields:ParameterField[]=[{...code,required:false},{name:"label",label:"Label",required:true,maxLength:255},{name:"value",label:"Value",maxLength:255},{name:"score",label:"Skor",required:true,help:numericHelp},order,active];
-export const methodFields:ParameterField[]=[survey,code,name,{name:"method_type",label:"Metode",required:true,kind:"select",options:["sum","average","weighted_average","formula"].map(value=>({value,label:value==="formula"?"formula — belum dievaluasi engine":value,disabled:value==="formula"}))},{name:"is_default",label:"Default",kind:"boolean",help:"Backend belum membatasi satu default aktif."},active,order];
-export const rangeFields:ParameterField[]=[code,{name:"label",label:"Label",required:true,maxLength:100},{name:"min_score",label:"Skor minimum",required:true,help:numericHelp},{name:"max_score",label:"Skor maksimum",required:true,help:numericHelp},{name:"color",label:"Warna",maxLength:20},order];
-
+const code: ParameterField = {
+  name: "code",
+  label: "Kode",
+  required: true,
+  maxLength: 50,
+};
+const name: ParameterField = {
+  name: "name",
+  label: "Nama",
+  required: true,
+  maxLength: 150,
+};
+const order: ParameterField = {
+  name: "sort_order",
+  label: "Urutan",
+  required: true,
+};
+const active: ParameterField = {
+  name: "is_active",
+  label: "Aktif",
+  kind: "boolean",
+};
+const survey: ParameterField = {
+  name: "survey_module_id",
+  label: "Survey Module",
+  required: true,
+  readOnly: true,
+};
+const conditionHelp =
+  'JSON: {"question":"Q_CODE","operator":"equals","value":"YES"}, atau {"all":[...]} / {"any":[...]}. Pemeriksaan referensi lintas pertanyaan dilakukan backend saat publish.';
+const numericHelp =
+  "Gunakan titik dan maksimal dua desimal. Nilai dikirim sebagai string numeric untuk menjaga presisi.";
+export const sectionFields: ParameterField[] = [
+  survey,
+  code,
+  name,
+  { name: "description", label: "Deskripsi", kind: "textarea" },
+  order,
+  active,
+  {
+    name: "visible_if",
+    label: "Kondisi tampil (JSON)",
+    kind: "textarea",
+    help: conditionHelp,
+  },
+];
+export const configurationFields: ParameterField[] = [
+  {
+    name: "assessment_period_id",
+    label: "Periode Penilaian",
+    required: true,
+    readOnly: true,
+  },
+  {
+    name: "weight",
+    label: "Bobot section (%)",
+    required: true,
+    help: "0–100; nilai 0 valid. Ini bukan bobot pertanyaan pada weighted_average.",
+  },
+  { name: "target_score", label: "Target", help: numericHelp },
+  { name: "minimum_score", label: "Minimum", help: numericHelp },
+  { name: "maximum_score", label: "Maksimum", help: numericHelp },
+  active,
+];
+export const periodFields: ParameterField[] = [
+  { name: "year", label: "Tahun", required: true },
+  {
+    name: "quarter",
+    label: "Quarter",
+    required: true,
+    kind: "select",
+    options: ["1", "2", "3", "4"].map((value) => ({
+      value,
+      label: "Q" + value,
+    })),
+  },
+  { name: "start_date", label: "Tanggal mulai", required: true, kind: "date" },
+  { name: "end_date", label: "Tanggal akhir", required: true, kind: "date" },
+  {
+    name: "status",
+    label: "Status",
+    kind: "select",
+    options: ["draft", "active", "closed"].map((value) => ({
+      value,
+      label: value,
+    })),
+  },
+];
+export const questionFields: ParameterField[] = [
+  survey,
+  {
+    name: "parameter_section_id",
+    label: "Section",
+    required: true,
+    readOnly: true,
+  },
+  code,
+  {
+    name: "type",
+    label: "Jenis pertanyaan",
+    required: true,
+    kind: "select",
+    options: QUESTION_TYPES.map((value) => ({ value, label: value })),
+  },
+  {
+    name: "question_text",
+    label: "Pertanyaan",
+    required: true,
+    kind: "textarea",
+  },
+  { name: "help_text", label: "Bantuan", kind: "textarea" },
+  { name: "placeholder", label: "Placeholder", maxLength: 255 },
+  {
+    name: "default_value",
+    label: "Nilai awal (teks)",
+    help: "Array/map dapat disimpan sebagai teks JSON; bukan evaluator.",
+  },
+  { name: "error_message", label: "Pesan error", maxLength: 255 },
+  {
+    name: "weight",
+    label: "Bobot pertanyaan",
+    required: true,
+    help: "Digunakan weighted_average; berbeda dari bobot section (%) pada internal_score.",
+  },
+  order,
+  active,
+  { name: "is_required", label: "Wajib dijawab", kind: "boolean" },
+  { name: "is_dynamic", label: "Pertanyaan dinamis", kind: "boolean" },
+  {
+    name: "settings",
+    label: "Settings (JSON)",
+    kind: "textarea",
+    help: "Sesuai QuestionFormRules: min/max, rows, file limits, options_source yang terdaftar. Backend memvalidasi struktur rinci.",
+  },
+  {
+    name: "validation_rules",
+    label: "Validasi jawaban (JSON)",
+    kind: "textarea",
+  },
+  {
+    name: "visible_if",
+    label: "Kondisi tampil (JSON)",
+    kind: "textarea",
+    help: conditionHelp,
+  },
+  {
+    name: "required_if",
+    label: "Kondisi wajib (JSON)",
+    kind: "textarea",
+    help: conditionHelp,
+  },
+];
+export const optionFields: ParameterField[] = [
+  { ...code, required: false },
+  { name: "label", label: "Label", required: true, maxLength: 255 },
+  { name: "value", label: "Value", maxLength: 255 },
+  { name: "score", label: "Skor", required: true, help: numericHelp },
+  order,
+  active,
+];
+export const methodFields: ParameterField[] = [
+  survey,
+  code,
+  name,
+  {
+    name: "method_type",
+    label: "Metode",
+    required: true,
+    kind: "select",
+    options: ["sum", "average", "weighted_average", "formula"].map((value) => ({
+      value,
+      label: value === "formula" ? "formula — belum dievaluasi engine" : value,
+      disabled: value === "formula",
+    })),
+  },
+  {
+    name: "is_default",
+    label: "Default",
+    kind: "boolean",
+    help: "Backend belum membatasi satu default aktif.",
+  },
+  active,
+  order,
+];
+export const rangeFields: ParameterField[] = [
+  code,
+  { name: "label", label: "Label", required: true, maxLength: 100 },
+  {
+    name: "min_score",
+    label: "Skor minimum",
+    required: true,
+    help: numericHelp,
+  },
+  {
+    name: "max_score",
+    label: "Skor maksimum",
+    required: true,
+    help: numericHelp,
+  },
+  { name: "color", label: "Warna", maxLength: 20 },
+  order,
+];

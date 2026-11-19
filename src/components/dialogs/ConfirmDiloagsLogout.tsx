@@ -11,7 +11,7 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { LogOut } from "lucide-react"
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ConfirmDialogsProps {
@@ -29,34 +29,22 @@ export default function ConfirmDialogs({
   title = "Konfirmasi",
   description = "Apakah Anda yakin?",
   onConfirm,
-  loading= false,
+  loading = false,
 }: ConfirmDialogsProps) {
   return (
-    <AlertDialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent size="sm">
         <AlertDialogHeader>
           <AlertDialogMedia className="bg-orange-100 text-orange-600">
             <LogOut />
           </AlertDialogMedia>
-          <AlertDialogTitle>
-            {title}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {description}
-          </AlertDialogDescription>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>
-            Cancel
-          </AlertDialogCancel>
+          <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
 
-          <Button
-            onClick={onConfirm}
-            disabled={loading}
-          >
+          <Button onClick={onConfirm} disabled={loading}>
             {loading ? "Logging out..." : "Logout"}
           </Button>
         </AlertDialogFooter>

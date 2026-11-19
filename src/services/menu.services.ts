@@ -7,5 +7,12 @@ export const getMenuTree = async () => {
   return data;
 };
 
-export const getAllMenus = () => collectPages(async (page) =>
-  (await axios.get<MenuCatalogResponse>("/menus", { params: { page, per_page: 200 } })).data);
+export const getAllMenus = () =>
+  collectPages(
+    async (page) =>
+      (
+        await axios.get<MenuCatalogResponse>("/menus", {
+          params: { page, per_page: 200 },
+        })
+      ).data,
+  );

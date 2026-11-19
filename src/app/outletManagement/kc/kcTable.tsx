@@ -1,4 +1,3 @@
-
 "use client";
 
 import { DataTables } from "@/components/tables/index";
@@ -11,21 +10,11 @@ interface KcTableProps {
   organizations: readonly OrganizationUnit[];
 }
 
-export default function KcTable({
-  data,
-  organizations,
-}: KcTableProps) {
-  const {
-    table,
-  } = useDataTable({
+export default function KcTable({ data, organizations }: KcTableProps) {
+  const { table } = useDataTable({
     data,
     columns: columns(organizations),
   });
 
-  return (
-    <DataTables
-      table={table}
-      title="Kantor Cabang"
-    />
-  );
+  return <DataTables table={table} title="Kantor Cabang" />;
 }

@@ -1,5 +1,12 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import type { AuthenticatedSession, AuthUser, LoginOtpData, AuthMenuGroup, AuthRole, AuthCapabilities } from "@/types/auth";
+import type {
+  AuthenticatedSession,
+  AuthUser,
+  LoginOtpData,
+  AuthMenuGroup,
+  AuthRole,
+  AuthCapabilities,
+} from "@/types/auth";
 
 interface AuthState {
   login: string | null;
@@ -40,10 +47,7 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     // simpan data login sementara
-    setOtpData: (
-      state,
-      action: PayloadAction<LoginOtpData>
-    ) => {
+    setOtpData: (state, action: PayloadAction<LoginOtpData>) => {
       state.reference = action.payload.reference;
       state.expires_in = action.payload.expires_in;
       state.sent_to = action.payload.sent_to;
@@ -58,7 +62,7 @@ const authSlice = createSlice({
       action: PayloadAction<{
         expires_in: number;
         sent_to: string;
-      }>
+      }>,
     ) => {
       state.expires_in = action.payload.expires_in;
       state.sent_to = action.payload.sent_to;
@@ -67,26 +71,19 @@ const authSlice = createSlice({
       // state.reference tidak diubah
       // state.login tidak diubah
 
-      state.expired_at =
-        Date.now() + action.payload.expires_in * 1000;
+      state.expired_at = Date.now() + action.payload.expires_in * 1000;
 
       // OTP hasil resend diverifikasi melalui
       // /auth/otp/verify
       state.otpVerifyType = "otp";
     },
 
-    setOtpVerifyType: (
-      state,
-      action: PayloadAction<"login" | "otp">
-    ) => {
+    setOtpVerifyType: (state, action: PayloadAction<"login" | "otp">) => {
       state.otpVerifyType = action.payload;
     },
 
     // Complete the session only after OTP and profile loading succeed.
-    setAuthData: (
-      state,
-      action: PayloadAction<AuthenticatedSession>
-    ) => {
+    setAuthData: (state, action: PayloadAction<AuthenticatedSession>) => {
       state.token = action.payload.token;
       state.token_type = action.payload.token_type;
       state.user = action.payload.user;
@@ -94,7 +91,8 @@ const authSlice = createSlice({
       state.permissions = action.payload.permissions;
       state.menu = action.payload.menu;
       state.capabilities = {
-        can_manage_user_bypass: action.payload.capabilities?.can_manage_user_bypass === true,
+        can_manage_user_bypass:
+          action.payload.capabilities?.can_manage_user_bypass === true,
       };
       state.isAuthenticated = true;
 
@@ -105,30 +103,6 @@ const authSlice = createSlice({
       state.expired_at = null;
       state.otpVerifyType = "login";
     },
-
-    // setToken(
-    //   state,
-    //   action: PayloadAction<{
-    //     token: string;
-    //     token_type: string;
-    //   }>
-    // ) {
-    //   state.token = action.payload.token;
-    //   state.token_type = action.payload.token_type;
-    //   state.isAuthenticated = true;
-    //   state.login = null;
-    //   state.reference = null;
-    //   state.expires_in = null;
-    //   state.sent_to = null;
-    //   state.expired_at = null;
-    // },
-
-    // setUser(
-    //   state,
-    //   action: PayloadAction<AuthUser>
-    // ) {
-    //   state.user = action.payload;
-    // },
 
     // Logout
     logout: () => initialState,

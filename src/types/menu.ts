@@ -49,4 +49,5 @@ export interface MenuCatalogItem {
   sort_order: number;
   is_active: boolean;
 }
+
 export type MenuCatalogResponse = ApiResponse<MenuCatalogItem[]>;

@@ -23,7 +23,12 @@ export interface AuthRole {
   name: string;
   code?: string;
   is_active?: boolean;
-  pivot?: { is_active?: boolean; scope_type?: string | null; scope_id?: number | null; expires_at?: string | null };
+  pivot?: {
+    is_active?: boolean;
+    scope_type?: string | null;
+    scope_id?: number | null;
+    expires_at?: string | null;
+  };
 }
 
 export interface AuthOrganizationUnit {
@@ -49,7 +54,6 @@ export interface AuthUserBase {
   password_changed_at: string | null;
   created_at: string;
   updated_at: string;
-
 }
 
 // Relations loaded by /auth/me, not guaranteed on an OTP response.

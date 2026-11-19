@@ -11,7 +11,7 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash } from "lucide-react"
+import { Trash } from "lucide-react";
 
 interface ConfirmDialogsProps {
   open: boolean;
@@ -39,21 +39,14 @@ export default function ConfirmDialogs({
   closeOnConfirm = true,
 }: ConfirmDialogsProps) {
   return (
-    <AlertDialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent size="sm">
         <AlertDialogHeader>
           <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
             <Trash />
           </AlertDialogMedia>
-          <AlertDialogTitle>
-            {title}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {description}
-          </AlertDialogDescription>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={!closeOnConfirm && loading}>

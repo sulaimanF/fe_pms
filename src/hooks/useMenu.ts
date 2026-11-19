@@ -21,10 +21,11 @@ export const useMenuCatalog = () => {
   return useQuery({
     ...session,
     queryKey: sessionQueryKey(session.id, "menus", "role-lookup"),
-    queryFn: () => requestInSession(session.id, () => {
-      assertAccess(session.id, ACCESS.menuCatalog);
-      return getAllMenus();
-    }),
+    queryFn: () =>
+      requestInSession(session.id, () => {
+        assertAccess(session.id, ACCESS.menuCatalog);
+        return getAllMenus();
+      }),
     enabled: session.enabled && access.allowed,
   });
 };

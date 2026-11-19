@@ -5,26 +5,6 @@ import { DataTablesActions } from "@/components/tables/index";
 import type { OrganizationUnit } from "@/types/organizationUnit";
 
 export const columns: ColumnDef<OrganizationUnit>[] = [
-  // {
-  //   accessorKey: "name",
-  //   header: "Nama",
-  //   size: 250,
-  // },
-  // {
-  //   accessorKey: "kota",
-  //   header: "Kota",
-  //   size: 250,
-  // },
-  // {
-  //   accessorKey: "jumlahWilayah",
-  //   header: "Jumlah KC",
-  //   size: 250,
-  // },
-  // {
-  //   accessorKey: "jumlahKcp",
-  //   header: "Jumlah KCP",
-  //   size: 250,
-  // },
   {
     accessorKey: "name",
     header: "Nama",
@@ -35,7 +15,7 @@ export const columns: ColumnDef<OrganizationUnit>[] = [
     header: "Kota",
     size: 250,
   },
-    {
+  {
     accessorKey: "jumlah_kc",
     header: "Jumlah KC",
     size: 250,
@@ -51,16 +31,7 @@ export const columns: ColumnDef<OrganizationUnit>[] = [
     enableHiding: false,
     size: 150,
     cell: ({ row }) => (
-      <DataTablesActions
-        variant="inline"
-        row={row.original}
-        unavailable
-      />
-      // <DataTablesActions
-      //   row={row.original}
-      //   onEdit={handleEdit}
-      //   onDelete={handleDelete}
-      // />
+      <DataTablesActions variant="inline" row={row.original} unavailable />
     ),
-  }
+  },
 ];

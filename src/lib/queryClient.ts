@@ -2,14 +2,28 @@ import { QueryClient } from "@tanstack/react-query";
 import type { QueryKey } from "@tanstack/react-query";
 
 const privateResources = new Set([
-  "users", "user", "roles", "role", "permissions", "menu-tree",
-  "organization-units", "outlets", "me",
+  "users",
+  "user",
+  "roles",
+  "role",
+  "permissions",
+  "menu-tree",
+  "organization-units",
+  "outlets",
+  "me",
 ]);
 
-export const sessionQueryKey = (id: number, resource: string, ...params: unknown[]) =>
-  ["session", id, resource, ...params] as const;
+export const sessionQueryKey = (
+  id: number,
+  resource: string,
+  ...params: unknown[]
+) => ["session", id, resource, ...params] as const;
 
-function belongsToSession(key: QueryKey | undefined, meta: Record<string, unknown> | undefined, id: number) {
+function belongsToSession(
+  key: QueryKey | undefined,
+  meta: Record<string, unknown> | undefined,
+  id: number,
+) {
   if (meta?.scope === "global") return false;
   if (key?.[0] === "session") return key[1] === id;
   if (meta?.sessionId === id) return true;
@@ -28,14 +42,21 @@ export const queryClient = new QueryClient({
 });
 
 export function removeSessionCache(id: number) {
-  queryClient.removeQueries({ predicate: (query) => belongsToSession(query.queryKey, query.meta, id) });
-  queryClient.getMutationCache().getAll().forEach((mutation) => {
-    if (belongsToSession(mutation.options.mutationKey, mutation.meta, id)) {
-      queryClient.getMutationCache().remove(mutation);
-    }
+  queryClient.removeQueries({
+    predicate: (query) => belongsToSession(query.queryKey, query.meta, id),
   });
+  queryClient
+    .getMutationCache()
+    .getAll()
+    .forEach((mutation) => {
+      if (belongsToSession(mutation.options.mutationKey, mutation.meta, id)) {
+        queryClient.getMutationCache().remove(mutation);
+      }
+    });
 }
 
 export function cancelSessionQueries(id: number) {
-  return queryClient.cancelQueries({ predicate: (query) => belongsToSession(query.queryKey, query.meta, id) });
+  return queryClient.cancelQueries({
+    predicate: (query) => belongsToSession(query.queryKey, query.meta, id),
+  });
 }

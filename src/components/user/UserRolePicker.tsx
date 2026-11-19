@@ -1,6 +1,12 @@
 "use client";
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Role } from "@/types/role";
 
 interface Props {
@@ -13,34 +19,71 @@ interface Props {
   required?: boolean;
 }
 
-export default function UserRolePicker({ options, currentRoles = [], selectedId, onChange, disabled, invalid, required = false }: Props) {
-  const hasMultipleRoles = !selectedId && new Set(currentRoles.map((role) => role.id)).size > 1;
-  const currentRole = currentRoles.find((role) => String(role.id) === selectedId);
-  const missingCurrentRole = currentRole && !options.some((role) => role.id === currentRole.id) ? currentRole : undefined;
+export default function UserRolePicker({
+  options,
+  currentRoles = [],
+  selectedId,
+  onChange,
+  disabled,
+  invalid,
+  required = false,
+}: Props) {
+  const hasMultipleRoles =
+    !selectedId && new Set(currentRoles.map((role) => role.id)).size > 1;
+  const currentRole = currentRoles.find(
+    (role) => String(role.id) === selectedId,
+  );
+  const missingCurrentRole =
+    currentRole && !options.some((role) => role.id === currentRole.id)
+      ? currentRole
+      : undefined;
   const value = selectedId || (required ? "" : "none");
 
   return (
     <div className="space-y-2">
-      <Select required={required} disabled={disabled} value={value} onValueChange={(nextValue) => {
-        if (disabled) return;
-        if (nextValue === "none") { if (!required) onChange(""); return; }
-        const role = options.find((item) => String(item.id) === nextValue);
-        if (role) onChange(String(role.id));
-      }}>
-        <SelectTrigger id="user-roles" className="w-full" aria-invalid={invalid || hasMultipleRoles}
+      <Select
+        required={required}
+        disabled={disabled}
+        value={value}
+        onValueChange={(nextValue) => {
+          if (disabled) return;
+          if (nextValue === "none") {
+            if (!required) onChange("");
+            return;
+          }
+          const role = options.find((item) => String(item.id) === nextValue);
+          if (role) onChange(String(role.id));
+        }}
+      >
+        <SelectTrigger
+          id="user-roles"
+          className="w-full"
+          aria-invalid={invalid || hasMultipleRoles}
           aria-required={required || undefined}
-          aria-describedby={hasMultipleRoles ? "user-roles-legacy" : undefined}>
+          aria-describedby={hasMultipleRoles ? "user-roles-legacy" : undefined}
+        >
           <SelectValue placeholder="Pilih satu role" />
         </SelectTrigger>
         <SelectContent position="popper">
           {!required && <SelectItem value="none">Tanpa role</SelectItem>}
-          {missingCurrentRole && <SelectItem value={String(missingCurrentRole.id)} disabled>{missingCurrentRole.name} (role saat ini)</SelectItem>}
-          {options.map((role) => <SelectItem key={role.id} value={String(role.id)}>{role.name} ({role.code})</SelectItem>)}
+          {missingCurrentRole && (
+            <SelectItem value={String(missingCurrentRole.id)} disabled>
+              {missingCurrentRole.name} (role saat ini)
+            </SelectItem>
+          )}
+          {options.map((role) => (
+            <SelectItem key={role.id} value={String(role.id)}>
+              {role.name} ({role.code})
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
-      {hasMultipleRoles && <p id="user-roles-legacy" role="alert" className="text-sm text-red-600">
-        User ini memiliki beberapa role lama. Pilih satu role sebelum menyimpan; pilihan tersebut akan mengganti assignment role lama.
-      </p>}
+      {hasMultipleRoles && (
+        <p id="user-roles-legacy" role="alert" className="text-sm text-red-600">
+          User ini memiliki beberapa role lama. Pilih satu role sebelum
+          menyimpan; pilihan tersebut akan mengganti assignment role lama.
+        </p>
+      )}
     </div>
   );
 }

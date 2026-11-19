@@ -14,14 +14,10 @@ export default function DataTablesFooter({
   return (
     <div className="flex flex-col gap-4 border-t pt-4 md:flex-row md:items-center md:justify-between">
       {/* Left Content */}
-      <div className="text-sm text-muted-foreground">
-        {footer}
-      </div>
+      <div className="text-sm text-muted-foreground">{footer}</div>
 
       {/* Right Content */}
-      <div>
-        {children}
-      </div>
+      <div>{children}</div>
     </div>
   );
 }

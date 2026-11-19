@@ -3,8 +3,6 @@ import ReduxProvider from "@/store/provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
-// import { GooeyToaster } from "@/components/ui/goey-toaster"
-// import { gooeyToast } from "@/components/ui/goey-toaster"
 
 export const metadata: Metadata = {
   title: "PMS - Premises Management System",
@@ -20,10 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className="h-full antialiased"
-    >
+    <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
         <ReduxProvider>
           <TooltipProvider>
@@ -38,7 +33,6 @@ export default function RootLayout({
                 },
               }}
             />
-            {/* <GooeyToaster position="top-center"/> */}
           </TooltipProvider>
         </ReduxProvider>
       </body>

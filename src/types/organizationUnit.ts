@@ -1,5 +1,3 @@
-// import { ApiResponse } from "./api";
-
 export interface OrganizationParent {
   id: number;
   name: string;

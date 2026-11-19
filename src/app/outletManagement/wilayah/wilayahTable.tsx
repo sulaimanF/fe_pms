@@ -1,7 +1,10 @@
-
 "use client";
 
-import { DataTables, DataTablesSearch, DataTablesColumnToggle } from "@/components/tables/index";
+import {
+  DataTables,
+  DataTablesSearch,
+  DataTablesColumnToggle,
+} from "@/components/tables/index";
 import { useDataTable } from "@/hooks/useDataTable";
 import { columns } from "./columns";
 import type { OrganizationUnit } from "@/types/organizationUnit";
@@ -11,22 +14,11 @@ interface WilayahTableProps {
   data: OrganizationUnit[];
 }
 
-export default function WilayahTable({
-  data,
-}: WilayahTableProps) {
-  const {
-    table,
-    globalFilter,
-    setGlobalFilter,
-  } = useDataTable({
+export default function WilayahTable({ data }: WilayahTableProps) {
+  const { table, globalFilter, setGlobalFilter } = useDataTable({
     data,
     columns,
   });
 
-  return (
-    <DataTables
-      table={table}
-      title="Kantor Wilayah"
-    />
-  );
+  return <DataTables table={table} title="Kantor Wilayah" />;
 }

@@ -9,16 +9,39 @@ import { getRoutePermissions } from "@/lib/authorization";
 import type { AccessRequirement } from "@/lib/authorization";
 import { verifySession } from "@/lib/sessionVerification";
 import { endSession } from "@/lib/sessionLifecycle";
-import { getSessionSnapshot, getServerSessionSnapshot, subscribeSession } from "@/lib/session";
+import {
+  getSessionSnapshot,
+  getServerSessionSnapshot,
+  subscribeSession,
+} from "@/lib/session";
 
-export function AccessDenied({ message = "Anda tidak memiliki izin untuk mengakses halaman atau data ini." }: { message?: string }) {
-  return <div role="alert" className="space-y-2 p-6"><h1 className="text-xl font-semibold">Akses ditolak</h1><p>{message}</p></div>;
+export function AccessDenied({
+  message = "Anda tidak memiliki izin untuk mengakses halaman atau data ini.",
+}: {
+  message?: string;
+}) {
+  return (
+    <div role="alert" className="space-y-2 p-6">
+      <h1 className="text-xl font-semibold">Akses ditolak</h1>
+      <p>{message}</p>
+    </div>
+  );
 }
 
-export function AccessGuard({ children, permissions = [] }: { children: React.ReactNode; permissions?: AccessRequirement }) {
+export function AccessGuard({
+  children,
+  permissions = [],
+}: {
+  children: React.ReactNode;
+  permissions?: AccessRequirement;
+}) {
   const router = useRouter();
   const access = useAuthorization(permissions);
-  const loggingOut = !!useSyncExternalStore(subscribeSession, getSessionSnapshot, getServerSessionSnapshot).logout;
+  const loggingOut = !!useSyncExternalStore(
+    subscribeSession,
+    getSessionSnapshot,
+    getServerSessionSnapshot,
+  ).logout;
   useEffect(() => {
     if (access.status === "invalid" && !loggingOut) router.replace("/login");
   }, [access.status, loggingOut, router]);
@@ -29,16 +52,37 @@ export function AccessGuard({ children, permissions = [] }: { children: React.Re
   if (access.status === "failed") {
     return (
       <div role="alert" className="space-y-4 p-6">
-        <p>{access.failure === "forbidden" ? "Verifikasi sesi ditolak oleh server." : "Sesi belum dapat diverifikasi. Periksa koneksi lalu coba lagi."}</p>
+        <p>
+          {access.failure === "forbidden"
+            ? "Verifikasi sesi ditolak oleh server."
+            : "Sesi belum dapat diverifikasi. Periksa koneksi lalu coba lagi."}
+        </p>
         <div className="flex gap-3">
-          <Button onClick={() => { void verifySession(); }}>Coba lagi</Button>
-          <Button variant="outline" onClick={() => { void endSession({ reason: "external" }); }}>Login ulang</Button>
+          <Button
+            onClick={() => {
+              void verifySession();
+            }}
+          >
+            Coba lagi
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              void endSession({ reason: "external" });
+            }}
+          >
+            Login ulang
+          </Button>
         </div>
       </div>
     );
   }
   if (access.status !== "valid") {
-    return <div role="status" aria-busy="true"><LoadingOverlay open /></div>;
+    return (
+      <div role="status" aria-busy="true">
+        <LoadingOverlay open />
+      </div>
+    );
   }
   if (!access.allowed) return <AccessDenied />;
   return <>{children}</>;
@@ -46,5 +90,9 @@ export function AccessGuard({ children, permissions = [] }: { children: React.Re
 
 export function RouteAccessGuard({ children }: { children: React.ReactNode }) {
   const permissions = getRoutePermissions(usePathname());
-  return <AccessGuard permissions={permissions ?? []}>{permissions ? children : <AccessDenied />}</AccessGuard>;
+  return (
+    <AccessGuard permissions={permissions ?? []}>
+      {permissions ? children : <AccessDenied />}
+    </AccessGuard>
+  );
 }

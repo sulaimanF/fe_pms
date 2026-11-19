@@ -4,7 +4,19 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { Bell, ClipboardCheck, Shield, Building2, Landmark, LayoutGrid, FileEdit, Clipboard, User, Contact, Award } from "lucide-react";
+import {
+  Bell,
+  ClipboardCheck,
+  Shield,
+  Building2,
+  Landmark,
+  LayoutGrid,
+  FileEdit,
+  Clipboard,
+  User,
+  Contact,
+  Award,
+} from "lucide-react";
 import { LogOut } from "lucide-react";
 import {
   Sidebar,
@@ -29,64 +41,25 @@ import { getRoutePermissions } from "@/lib/authorization";
 import { useParameterAccess } from "@/hooks/useParameterAccess";
 import { isParameterPath } from "@/lib/parameterAuthorization";
 
-type NavLink = {
-    icon: React.ElementType;
-    name: string;
-    path: string;
-};
-
-// type NavSection = {
-//     title: string;
-//     items: NavLink[];
-// };
-
-// const navItems: NavSection[] = [
-//   {
-//     title: "",
-//     items: [
-//       { icon: LayoutGrid, name: "Home", path: "/dashboard" },
-//       { icon: Bell, name: "Notification", path: "/notification" },
-//       { icon: Shield, name: "Audit Trail", path: "/auditTrail" },
-//       { icon: Landmark, name: "Outlet", path: "/outlet" },
-//     ],
-//   },
-//   {
-//     title: "Kuesioner",
-//     items: [
-//       { icon: FileEdit, name: "Kuesioner", path: "/kuesioner" },
-//       { icon: Clipboard, name: "Response", path: "/response" },
-//       { icon: ClipboardCheck, name: "Review Kuesioner", path: "/review" },
-//     ],
-//   },
-//   {
-//     title: "Master Data",
-//     items: [
-//       { icon: User, name: "User Management", path: "/userManagement" },
-//       { icon: Contact, name: "Role Management", path: "/roleManagement" },
-//       { icon: Building2, name: "Outlet Management", path: "/outletManagement" },
-//       { icon: Award, name: "Parameter Penilaian", path: "/parameterPenilaian" },
-//     ],
-//   },
-// ];
-
 export default function AppSidebar() {
-  const user = useAppSelector(
-    (state) => state.auth.user
-  );
+  const user = useAppSelector((state) => state.auth.user);
 
-  const menu = useAppSelector(
-    (state) => state.auth.menu
-  );
+  const menu = useAppSelector((state) => state.auth.menu);
   const access = useAuthorization();
   const parameterAccess = useParameterAccess();
-  const visibleMenu = access.allowed ? menu.map((section) => ({
-    ...section,
-    items: section.items.filter((item) => {
-      if (isParameterPath(item.path) && !parameterAccess.allowed) return false;
-      const required = getRoutePermissions(item.path);
-      return required === null || access.can(required);
-    }),
-  })).filter((section) => section.items.length > 0) : [];
+  const visibleMenu = access.allowed
+    ? menu
+        .map((section) => ({
+          ...section,
+          items: section.items.filter((item) => {
+            if (isParameterPath(item.path) && !parameterAccess.allowed)
+              return false;
+            const required = getRoutePermissions(item.path);
+            return required === null || access.can(required);
+          }),
+        }))
+        .filter((section) => section.items.length > 0)
+    : [];
   const visibleUser = access.allowed ? user : null;
 
   const iconMap = {
@@ -102,7 +75,7 @@ export default function AppSidebar() {
     Contact,
     Award,
   };
-  
+
   const pathname = usePathname();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -117,16 +90,16 @@ export default function AppSidebar() {
   };
 
   return (
-    <Sidebar
-      collapsible="icon"
-    >
+    <Sidebar collapsible="icon">
       {/* Header */}
       <SidebarHeader className="py-6">
-        <div className={`
+        <div
+          className={`
           flex
           items-center
           ${collapsed ? "justify-center" : "justify-start px-4"}
-        `}>
+        `}
+        >
           <Image
             src="/images/logo-putih.svg"
             alt="Logo"
@@ -135,9 +108,11 @@ export default function AppSidebar() {
           />
         </div>
 
-        <div className={`mt-6 flex flex-col items-center ${
-          collapsed ? "gap-0" : "gap-2"
-        }`}>
+        <div
+          className={`mt-6 flex flex-col items-center ${
+            collapsed ? "gap-0" : "gap-2"
+          }`}
+        >
           <Avatar className={collapsed ? "h-8 w-8" : "h-16 w-16"}>
             <AvatarFallback>MR</AvatarFallback>
           </Avatar>
@@ -145,7 +120,9 @@ export default function AppSidebar() {
           {!collapsed && (
             <>
               <h3 className="text-sidebar-foreground font-medium">
-                {visibleUser?.display_name ?? visibleUser?.full_name ?? visibleUser?.username}
+                {visibleUser?.display_name ??
+                  visibleUser?.full_name ??
+                  visibleUser?.username}
               </h3>
 
               <p className="text-sidebar-foreground/80 text-sm">
@@ -156,8 +133,8 @@ export default function AppSidebar() {
         </div>
       </SidebarHeader>
 
-        {/* Content */}
-        <SidebarContent>
+      {/* Content */}
+      <SidebarContent>
         {visibleMenu.map((section, index) => (
           <SidebarGroup
             key={`${section.title}-${index}`}
@@ -166,28 +143,21 @@ export default function AppSidebar() {
             {index > 0 && (
               <Separator
                 className={
-                  collapsed
-                    ? "mx-2 my-2 bg-white/50"
-                    : "my-2 bg-white/50"
+                  collapsed ? "mx-2 my-2 bg-white/50" : "my-2 bg-white/50"
                 }
               />
             )}
 
             {section.title && (
-              <SidebarGroupLabel
-                className="uppercase text-sidebar-foreground/70"
-              >
+              <SidebarGroupLabel className="uppercase text-sidebar-foreground/70">
                 {section.title}
               </SidebarGroupLabel>
             )}
 
             <SidebarGroupContent>
-              <SidebarMenu
-                className={collapsed ? "space-y-1" : "space-y-2"}
-              >
+              <SidebarMenu className={collapsed ? "space-y-1" : "space-y-2"}>
                 {section.items.map((item) => {
-                  const Icon =
-                    iconMap[item.icon as keyof typeof iconMap];
+                  const Icon = iconMap[item.icon as keyof typeof iconMap];
 
                   if (!Icon) {
                     return null;
@@ -198,9 +168,7 @@ export default function AppSidebar() {
                       <SidebarMenuButton
                         asChild
                         isActive={pathname === item.path}
-                        tooltip={
-                          collapsed ? item.name : undefined
-                        }
+                        tooltip={collapsed ? item.name : undefined}
                         className={`
                           text-[15px]
                           font-medium
@@ -208,11 +176,7 @@ export default function AppSidebar() {
                           hover:text-sidebar-accent-foreground
                           data-[active=true]:bg-white
                           data-[active=true]:text-[#0D5EF4]
-                          ${
-                            collapsed
-                              ? "mx-auto rounded-lg"
-                              : "h-10"
-                          }
+                          ${collapsed ? "mx-auto rounded-lg" : "h-10"}
                         `}
                       >
                         <Link
@@ -224,11 +188,7 @@ export default function AppSidebar() {
                         >
                           <Icon />
 
-                          <span
-                            className={
-                              collapsed ? "hidden" : ""
-                            }
-                          >
+                          <span className={collapsed ? "hidden" : ""}>
                             {item.name}
                           </span>
                         </Link>
@@ -253,17 +213,11 @@ export default function AppSidebar() {
                 text-[15px]
                 font-medium
                 hover:bg-sidebar-accent
-                ${
-                  collapsed
-                    ? "mx-auto rounded-lg"
-                    : "h-10"
-                }
+                ${collapsed ? "mx-auto rounded-lg" : "h-10"}
               `}
             >
-              <LogOut/>
-              <span className={collapsed ? "hidden" : ""}>
-                  Logout
-              </span>
+              <LogOut />
+              <span className={collapsed ? "hidden" : ""}>Logout</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -276,7 +230,6 @@ export default function AppSidebar() {
         onConfirm={confirmLogout}
         loading={loggingOut}
       />
-
     </Sidebar>
   );
 }

@@ -1,5 +1,10 @@
 import axios from "axios";
-import { captureSession, getSessionSnapshot, isCurrentSession, assertSession } from "@/lib/session";
+import {
+  captureSession,
+  getSessionSnapshot,
+  isCurrentSession,
+  assertSession,
+} from "@/lib/session";
 import { store } from "@/store/store";
 
 // Verified against premises-moni-sys/routes/api/v1.php. Each array requires ALL codes.
@@ -32,19 +37,28 @@ export const ACCESS = {
   menuCatalog: ["menu.viewAny"],
 } as const;
 
-export type PermissionCode = typeof ACCESS[keyof typeof ACCESS][number];
+export type PermissionCode = (typeof ACCESS)[keyof typeof ACCESS][number];
 export type AccessRequirement = readonly PermissionCode[];
 
-export function hasPermissions(granted: readonly string[], required: AccessRequirement) {
+export function hasPermissions(
+  granted: readonly string[],
+  required: AccessRequirement,
+) {
   return required.every((code) => granted.includes(code));
 }
 
 export function canAccess(required: AccessRequirement) {
   const context = captureSession();
   const auth = store.getState().auth;
-  return getSessionSnapshot().status === "valid" && isCurrentSession(context) &&
-    auth.isAuthenticated && !!auth.user && !!auth.token && auth.token === context.token &&
-    hasPermissions(auth.permissions, required);
+  return (
+    getSessionSnapshot().status === "valid" &&
+    isCurrentSession(context) &&
+    auth.isAuthenticated &&
+    !!auth.user &&
+    !!auth.token &&
+    auth.token === context.token &&
+    hasPermissions(auth.permissions, required)
+  );
 }
 
 export class AccessDeniedError extends Error {
@@ -55,8 +69,10 @@ export class AccessDeniedError extends Error {
 }
 
 export function canManageUserBypass() {
-  return canAccess(ACCESS.dashboard) &&
-    store.getState().auth.capabilities?.can_manage_user_bypass === true;
+  return (
+    canAccess(ACCESS.dashboard) &&
+    store.getState().auth.capabilities?.can_manage_user_bypass === true
+  );
 }
 
 export function assertManageUserBypass(id: number) {
@@ -70,11 +86,15 @@ export function assertAccess(id: number, required: AccessRequirement) {
 }
 
 export function isForbidden(error: unknown) {
-  return error instanceof AccessDeniedError ||
-    (axios.isAxiosError(error) && error.response?.status === 403);
+  return (
+    error instanceof AccessDeniedError ||
+    (axios.isAxiosError(error) && error.response?.status === 403)
+  );
 }
 
-export function getRoutePermissions(pathname: string): AccessRequirement | null {
+export function getRoutePermissions(
+  pathname: string,
+): AccessRequirement | null {
   // Backend menu fields may be null; only known route paths have an A3 policy.
   if (typeof pathname !== "string") return null;
   const path = pathname.replace(/\/+$/, "");
@@ -88,6 +108,7 @@ export function getRoutePermissions(pathname: string): AccessRequirement | null 
   if (/^\/userManagement\/update\/[^/]+$/.test(path)) return ACCESS.userUpdate;
   if (path === "/outletManagement") return ACCESS.outletList;
   if (path === "/outletManagement/create") return ACCESS.outletCreate;
-  if (/^\/outletManagement\/update\/[^/]+$/.test(path)) return ACCESS.outletUpdate;
+  if (/^\/outletManagement\/update\/[^/]+$/.test(path))
+    return ACCESS.outletUpdate;
   return null;
 }

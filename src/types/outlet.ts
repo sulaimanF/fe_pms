@@ -1,10 +1,30 @@
 import type { ApiResponse } from "./common";
 
-export const OUTLET_TYPES = ["branch", "kiosk", "atm", "agent", "office"] as const;
-export type OutletType = typeof OUTLET_TYPES[number];
-export type OutletJson = string | number | boolean | null | OutletJson[] | { [key: string]: OutletJson };
+export const OUTLET_TYPES = [
+  "branch",
+  "kiosk",
+  "atm",
+  "agent",
+  "office",
+] as const;
+
+export type OutletType = (typeof OUTLET_TYPES)[number];
+
+export type OutletJson =
+  | string
+  | number
+  | boolean
+  | null
+  | OutletJson[]
+  | { [key: string]: OutletJson };
 export type OutletJsonContainer = OutletJson[] | { [key: string]: OutletJson };
-export interface OutletOrganizationUnit { id: number; name: string; code: string }
+
+export interface OutletOrganizationUnit {
+  id: number;
+  name: string;
+  code: string;
+}
+
 export interface Outlet {
   id: number;
   organization_unit_id: number;
@@ -34,6 +54,7 @@ export interface Outlet {
   organization_unit?: OutletOrganizationUnit | null;
   manager?: { id: number; full_name: string; email: string } | null;
 }
+
 export interface OutletCreateRequest {
   organization_unit_id: number;
   code: string;
@@ -55,6 +76,9 @@ export interface OutletCreateRequest {
   operating_hours?: OutletJsonContainer | null;
   metadata?: OutletJsonContainer | null;
 }
+
 export type OutletUpdateRequest = Partial<OutletCreateRequest>;
+
 export type OutletResponse = ApiResponse<Outlet[]>;
+
 export type OutletDetailResponse = ApiResponse<Outlet>;

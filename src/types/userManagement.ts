@@ -2,17 +2,19 @@ import type { Role } from "./role";
 import type { OrganizationUnit } from "./organizationUnit";
 import type { ApiResponse } from "./common";
 
-export type UserAssignedRole = Pick<Role, "id" | "code" | "name"> & Partial<Role> & {
-  pivot?: {
-    user_id: number;
-    role_id: number;
-    scope_type: string | null;
-    scope_id: number | null;
-    assigned_at: string | null;
-    expires_at: string | null;
-    is_active: boolean
+export type UserAssignedRole = Pick<Role, "id" | "code" | "name"> &
+  Partial<Role> & {
+    pivot?: {
+      user_id: number;
+      role_id: number;
+      scope_type: string | null;
+      scope_id: number | null;
+      assigned_at: string | null;
+      expires_at: string | null;
+      is_active: boolean;
+    };
   };
-};
+
 export interface UserAssignedOutlet {
   id: number;
   name: string;
@@ -24,7 +26,7 @@ export interface UserAssignedOutlet {
     is_primary: boolean;
     assigned_at: string | null;
     assigned_by: number | null;
-    revoked_at: string | null
+    revoked_at: string | null;
   };
 }
 
@@ -42,10 +44,13 @@ export interface UserManagement {
   is_bypass?: boolean;
   two_factor_confirmed_at: string | null;
   password_changed_at: string | null;
-  created_at: string; updated_at: string;
+  created_at: string;
+  updated_at: string;
   organization_unit?: Pick<OrganizationUnit, "id" | "name" | "code"> | null;
-  roles?: UserAssignedRole[]; outlets?: UserAssignedOutlet[];
+  roles?: UserAssignedRole[];
+  outlets?: UserAssignedOutlet[];
 }
+
 export interface UserCreateRequest {
   username: string;
   email: string;
@@ -60,12 +65,26 @@ export interface UserCreateRequest {
   role_id: number;
   outlet_ids: number[];
 }
+
 export type UserUpdateRequest = Partial<UserCreateRequest>;
-export interface Pagination { per_page: number; current_page: number; total: number; last_page: number }
+
+export interface Pagination {
+  per_page: number;
+  current_page: number;
+  total: number;
+  last_page: number;
+}
+
 export type UserResponse = ApiResponse<UserManagement[]>;
+
 export type UserDetailResponse = ApiResponse<UserManagement>;
+
 export type UserDeleteResponse = ApiResponse<null>;
-export type UserWriteResponse = ApiResponse<Pick<UserManagement, "id" | "username" | "email" | "full_name"> & Partial<UserManagement>>;
+
+export type UserWriteResponse = ApiResponse<
+  Pick<UserManagement, "id" | "username" | "email" | "full_name"> &
+    Partial<UserManagement>
+>;
 
 export interface UserPermissionOverride {
   permission_id: number;
@@ -80,16 +99,27 @@ export interface UserPermissionOverride {
   granted_by: number | null;
   expires_at: string | null;
 }
+
 export interface UserPermissionCreateRequest {
   permission_id: number;
   granted: boolean;
   reason: string | null;
   expires_at: string | null;
 }
-export type UserPermissionUpdateRequest = Partial<Omit<UserPermissionCreateRequest, "permission_id">>;
+
+export type UserPermissionUpdateRequest = Partial<
+  Omit<UserPermissionCreateRequest, "permission_id">
+>;
+
 export type UserPermissionsResponse = ApiResponse<UserPermissionOverride[]>;
+
 export type UserPermissionResponse = ApiResponse<UserPermissionOverride>;
+
 export type UserPermissionMutation =
   | { kind: "create"; payload: UserPermissionCreateRequest }
-  | { kind: "update"; permissionId: number; payload: UserPermissionUpdateRequest }
+  | {
+      kind: "update";
+      permissionId: number;
+      payload: UserPermissionUpdateRequest;
+    }
   | { kind: "delete"; permissionId: number };

@@ -23,24 +23,16 @@ export default function DataTablesHeader({
       {/* Left */}
       <div className="space-y-1">
         {title && (
-          <h2 className="text-2xl font-semibold tracking-tight">
-            {title}
-          </h2>
+          <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
         )}
 
         {description && (
-          <p className="text-sm text-muted-foreground">
-            {description}
-          </p>
+          <p className="text-sm text-muted-foreground">{description}</p>
         )}
       </div>
 
       {/* Right */}
-      {actions && (
-        <div className="flex items-center gap-2">
-          {actions}
-        </div>
-      )}
+      {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
   );
 }

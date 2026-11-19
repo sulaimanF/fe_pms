@@ -32,10 +32,7 @@ export default function DataTablesLoading({
             }}
           >
             {Array.from({ length: columns }).map((_, colIndex) => (
-              <Skeleton
-                key={colIndex}
-                className="h-8 w-full"
-              />
+              <Skeleton key={colIndex} className="h-8 w-full" />
             ))}
           </div>
         ))}

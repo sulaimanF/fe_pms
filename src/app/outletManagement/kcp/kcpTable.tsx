@@ -13,7 +13,21 @@ interface Props {
   onDelete: (outlet: OutletTableRow) => void;
 }
 export default function KcpTable({ data, access, onView, onDelete }: Props) {
-  const { table, globalFilter, setGlobalFilter } = useDataTable({ data, columns: columns(onView, onDelete, access) });
-  return <DataTables table={table} title="Outlet"
-    toolbar={<DataTablesSearch value={globalFilter} onChange={setGlobalFilter} placeholder="Cari Outlet..." />} />;
+  const { table, globalFilter, setGlobalFilter } = useDataTable({
+    data,
+    columns: columns(onView, onDelete, access),
+  });
+  return (
+    <DataTables
+      table={table}
+      title="Outlet"
+      toolbar={
+        <DataTablesSearch
+          value={globalFilter}
+          onChange={setGlobalFilter}
+          placeholder="Cari Outlet..."
+        />
+      }
+    />
+  );
 }

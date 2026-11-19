@@ -28,26 +28,23 @@ export function useDataTable<TData>({
   columns,
   initialPageSize = 10,
 }: UseDataTableProps<TData>) {
-  const [sorting, setSorting] =
-    React.useState<SortingState>([]);
+  const [sorting, setSorting] = React.useState<SortingState>([]);
 
-  const [columnFilters, setColumnFilters] =
-    React.useState<ColumnFiltersState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    [],
+  );
 
-  const [globalFilter, setGlobalFilter] =
-    React.useState("");
+  const [globalFilter, setGlobalFilter] = React.useState("");
 
-  const [rowSelection, setRowSelection] =
-    React.useState<RowSelectionState>({});
+  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
 
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
 
-  const [pagination, setPagination] =
-    React.useState<PaginationState>({
-      pageIndex: 0,
-      pageSize: initialPageSize,
-    });
+  const [pagination, setPagination] = React.useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: initialPageSize,
+  });
 
   const table = useReactTable({
     data,
@@ -70,22 +67,17 @@ export function useDataTable<TData>({
 
     onRowSelectionChange: setRowSelection,
 
-    onColumnVisibilityChange:
-      setColumnVisibility,
+    onColumnVisibilityChange: setColumnVisibility,
 
     onPaginationChange: setPagination,
 
-    getCoreRowModel:
-      getCoreRowModel(),
+    getCoreRowModel: getCoreRowModel(),
 
-    getSortedRowModel:
-      getSortedRowModel(),
+    getSortedRowModel: getSortedRowModel(),
 
-    getFilteredRowModel:
-      getFilteredRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
 
-    getPaginationRowModel:
-      getPaginationRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
 
     enableRowSelection: true,
   });

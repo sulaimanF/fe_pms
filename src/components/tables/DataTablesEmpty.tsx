@@ -11,26 +11,16 @@ export default function DataTablesEmpty({
   return (
     <div className="flex flex-col items-center justify-center rounded-md border py-12 text-center">
       {/* Icon */}
-      <div className="mb-4 text-5xl">
-        {icon ?? "📄"}
-      </div>
+      <div className="mb-4 text-5xl">{icon ?? "📄"}</div>
 
       {/* Title */}
-      <h3 className="text-lg font-semibold">
-        {title}
-      </h3>
+      <h3 className="text-lg font-semibold">{title}</h3>
 
       {/* Description */}
-      <p className="mt-2 text-sm text-muted-foreground">
-        {description}
-      </p>
+      <p className="mt-2 text-sm text-muted-foreground">{description}</p>
 
       {/* Optional Action */}
-      {children && (
-        <div className="mt-4">
-          {children}
-        </div>
-      )}
+      {children && <div className="mt-4">{children}</div>}
     </div>
   );
 }

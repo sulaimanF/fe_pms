@@ -8,9 +8,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { queryClient } from "@/lib/queryClient";
 import {
-  captureSession, getSessionSnapshot, initializeSession, isCurrentSession,
-  readStoredToken, subscribeSessionEvents,
-  getServerSessionSnapshot, subscribeSession,
+  captureSession,
+  getSessionSnapshot,
+  initializeSession,
+  isCurrentSession,
+  readStoredToken,
+  subscribeSessionEvents,
+  getServerSessionSnapshot,
+  subscribeSession,
   acknowledgeLogout,
 } from "@/lib/session";
 import { endSession } from "@/lib/sessionLifecycle";
@@ -22,7 +27,11 @@ import LoadingOverlay from "@/components/ui/LoadingOverlay";
 function SessionBoundary({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const session = useSyncExternalStore(subscribeSession, getSessionSnapshot, getServerSessionSnapshot);
+  const session = useSyncExternalStore(
+    subscribeSession,
+    getSessionSnapshot,
+    getServerSessionSnapshot,
+  );
 
   useEffect(() => {
     let active = true;
@@ -37,48 +46,80 @@ function SessionBoundary({ children }: { children: React.ReactNode }) {
           // Explicit logout waits for the server result; expiration/OTP rollback keep their flow.
           if (event.reason === "logout" || getSessionSnapshot().logout) return;
           router.replace("/login");
-          if (!event.storageCleared) toast.warning("Sesi lokal berakhir, tetapi penyimpanan sesi gagal dibersihkan.");
-          else if (event.reason === "expired") toast.warning("Sesi telah berakhir. Silakan login kembali.");
-          else if (event.reason === "login-rollback") toast.warning("Percobaan login dibatalkan. Silakan login kembali untuk mendapatkan OTP baru.");
-        } else if (event.status === "unconfirmed" && event.reason !== "logout") {
-          toast.warning(event.reason === "login-rollback"
-            ? "Percobaan login sudah dibatalkan secara lokal. Pencabutan token di server belum dapat dipastikan."
-            : "Anda sudah logout lokal. Pencabutan token di server belum dapat dipastikan.");
+          if (!event.storageCleared)
+            toast.warning(
+              "Sesi lokal berakhir, tetapi penyimpanan sesi gagal dibersihkan.",
+            );
+          else if (event.reason === "expired")
+            toast.warning("Sesi telah berakhir. Silakan login kembali.");
+          else if (event.reason === "login-rollback")
+            toast.warning(
+              "Percobaan login dibatalkan. Silakan login kembali untuk mendapatkan OTP baru.",
+            );
+        } else if (
+          event.status === "unconfirmed" &&
+          event.reason !== "logout"
+        ) {
+          toast.warning(
+            event.reason === "login-rollback"
+              ? "Percobaan login sudah dibatalkan secara lokal. Pencabutan token di server belum dapat dipastikan."
+              : "Anda sudah logout lokal. Pencabutan token di server belum dapat dipastikan.",
+          );
         }
       }
     });
 
     const synchronize = async (external = false) => {
       // Another tab clearing the same token must not dismiss our explicit logout progress.
-      if (external && getSessionSnapshot().logout && readStoredToken() === null) return;
+      if (external && getSessionSnapshot().logout && readStoredToken() === null)
+        return;
       const ownVersion = ++version;
       const previous = captureSession();
       if (external && getSessionSnapshot().ready) {
         await endSession({ reason: "external", context: previous });
       }
       if (!active || ownVersion !== version) return;
-      const context = !getSessionSnapshot().ready || external
-        ? initializeSession(readStoredToken()) : captureSession();
+      const context =
+        !getSessionSnapshot().ready || external
+          ? initializeSession(readStoredToken())
+          : captureSession();
       const auth = store.getState().auth;
-      if (getSessionSnapshot().status === "valid" && auth.isAuthenticated && auth.token === context.token && context.token) return;
+      if (
+        getSessionSnapshot().status === "valid" &&
+        auth.isAuthenticated &&
+        auth.token === context.token &&
+        context.token
+      )
+        return;
       if (!context.token) {
         if (auth.reference && !auth.isAuthenticated && !auth.token) {
           store.dispatch(prepareSession());
           return;
         }
-        if (auth.isAuthenticated || auth.token || auth.user || auth.roles.length || auth.permissions.length || auth.menu.length) {
+        if (
+          auth.isAuthenticated ||
+          auth.token ||
+          auth.user ||
+          auth.roles.length ||
+          auth.permissions.length ||
+          auth.menu.length
+        ) {
           await endSession({ reason: "external", context });
         }
         return;
       }
-      const incompleteLogin = !external && !(auth.isAuthenticated && auth.token === context.token);
+      const incompleteLogin =
+        !external && !(auth.isAuthenticated && auth.token === context.token);
       await verifySession(context, incompleteLogin);
     };
     // Revalidate restored auth; preserve a pending OTP and reuse an in-memory verified login.
     void synchronize();
 
     const onStorage = (event: StorageEvent) => {
-      if ((event.key === "token" || event.key === null) && readStoredToken() !== captureSession().token) {
+      if (
+        (event.key === "token" || event.key === null) &&
+        readStoredToken() !== captureSession().token
+      ) {
         void synchronize(true);
       }
     };
@@ -103,23 +144,42 @@ function SessionBoundary({ children }: { children: React.ReactNode }) {
     const current = getSessionSnapshot();
     if (current.id !== session.id || current.logout !== progress) return;
     acknowledgeLogout(session.id);
-    if (progress.outcome.status === "confirmed") toast.success(progress.outcome.message || "Logged out successfully.");
-    else if (progress.outcome.status === "unconfirmed") toast.warning("Anda sudah logout lokal. Pencabutan token di server belum dapat dipastikan.");
+    if (progress.outcome.status === "confirmed")
+      toast.success(progress.outcome.message || "Logged out successfully.");
+    else if (progress.outcome.status === "unconfirmed")
+      toast.warning(
+        "Anda sudah logout lokal. Pencabutan token di server belum dapat dipastikan.",
+      );
     else toast.info("Sesi lokal telah berakhir.");
-    if (!progress.storageCleared) toast.warning("Sesi lokal berakhir, tetapi pembersihan penyimpanan atau cache sesi belum seluruhnya berhasil.");
+    if (!progress.storageCleared)
+      toast.warning(
+        "Sesi lokal berakhir, tetapi pembersihan penyimpanan atau cache sesi belum seluruhnya berhasil.",
+      );
   }, [session.id, session.logout, pathname, router]);
 
   // Discard private form/observer state on a boundary; keep an ongoing OTP mounted.
-  const boundaryKey = pathname === "/login" || pathname === "/otp" || pathname === "/"
-    ? "auth" : session.id;
+  const boundaryKey =
+    pathname === "/login" || pathname === "/otp" || pathname === "/"
+      ? "auth"
+      : session.id;
   if (!session.ready) return null;
-  return <>
-    {session.logout && <div role="status" aria-live="polite" aria-busy="true"><LoadingOverlay open text="Logging out..." /></div>}
-    <Fragment key={boundaryKey}>{children}</Fragment>
-  </>;
+  return (
+    <>
+      {session.logout && (
+        <div role="status" aria-live="polite" aria-busy="true">
+          <LoadingOverlay open text="Logging out..." />
+        </div>
+      )}
+      <Fragment key={boundaryKey}>{children}</Fragment>
+    </>
+  );
 }
 
-export default function ReduxProvider({ children }: { children: React.ReactNode }) {
+export default function ReduxProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>

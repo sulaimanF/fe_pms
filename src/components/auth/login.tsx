@@ -45,7 +45,7 @@ export default function Login() {
   // UI State
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   // Handle Login
   const handleLogin = async (data: LoginFormData) => {
     // Cegah double click
@@ -61,12 +61,11 @@ export default function Login() {
         password: data.password,
       };
 
-      const response =
-        await api.post<ApiResponse<LoginResponse>>(
-          "/auth/login",
-          payload,
-          { sessionContext: context }
-        );
+      const response = await api.post<ApiResponse<LoginResponse>>(
+        "/auth/login",
+        payload,
+        { sessionContext: context },
+      );
 
       if (!mounted.current || !isCurrentSession(context)) return;
       const loginData = response.data.data;
@@ -76,7 +75,7 @@ export default function Login() {
           setOtpData({
             ...loginData,
             login: payload.login,
-          })
+          }),
         );
 
         toast.success(response.data.message);
@@ -87,7 +86,12 @@ export default function Login() {
         }, 1000);
       }
     } catch (error: unknown) {
-      if (!mounted.current || !isCurrentSession(context) || axios.isCancel(error)) return;
+      if (
+        !mounted.current ||
+        !isCurrentSession(context) ||
+        axios.isCancel(error)
+      )
+        return;
 
       logAuthRequestError("login", error);
 
@@ -125,7 +129,11 @@ export default function Login() {
             </div>
             {/* Logo */}
             <div>
-              <form onSubmit={(event) => { void handleSubmit(handleLogin)(event); }}>
+              <form
+                onSubmit={(event) => {
+                  void handleSubmit(handleLogin)(event);
+                }}
+              >
                 <div className="space-y-6">
                   {/* Username/userAD */}
                   <div className="space-y-2">
@@ -147,7 +155,7 @@ export default function Login() {
                     {/* Message error */}
                   </div>
                   {/* Username/userAD */}
-                  
+
                   {/* Password */}
                   <div className="space-y-2">
                     <Label htmlFor="password">
@@ -163,12 +171,12 @@ export default function Login() {
                       />
                     </div>
                     {/* Message error */}
-                      {errors.password && (
-                        <p className="text-sm text-red-500">
-                          {errors.password.message}
-                        </p>
-                      )}
-                      {/* Message error */}
+                    {errors.password && (
+                      <p className="text-sm text-red-500">
+                        {errors.password.message}
+                      </p>
+                    )}
+                    {/* Message error */}
                   </div>
                   {/* Passowrd */}
 

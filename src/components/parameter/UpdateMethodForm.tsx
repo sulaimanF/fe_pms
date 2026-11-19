@@ -1,80 +1,217 @@
 "use client";
+
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import ParameterFields from "./ParameterFields";
 import { methodFields } from "./parameterFieldDefinitions";
-import { ParameterWriteNotice, parameterRequestErrors, parameterValidationErrors } from "./ParameterFeedback";
+import {
+  ParameterWriteNotice,
+  parameterRequestErrors,
+  parameterValidationErrors,
+} from "./ParameterFeedback";
 import type { ParameterAttempt } from "./ParameterFeedback";
 import { useUpdateParameter } from "@/hooks/useParameterPenilaian";
-import { assertParameterAccess, canManageParameters } from "@/lib/parameterAuthorization";
+import {
+  assertParameterAccess,
+  canManageParameters,
+} from "@/lib/parameterAuthorization";
 import { captureSession, isCurrentSession } from "@/lib/session";
-import { checkParameterResult, parameterLink, parameterRoot } from "@/lib/parameterPenilaian";
+import {
+  checkParameterResult,
+  parameterLink,
+  parameterRoot,
+} from "@/lib/parameterPenilaian";
 import { ParameterUncertainError } from "@/services/parameterPenilaian.services";
-import { updateMethodSchema, methodValues, parameterChanges, buildMethod } from "@/validations/parameterPenilaianSchema";
+import {
+  updateMethodSchema,
+  methodValues,
+  parameterChanges,
+  buildMethod,
+} from "@/validations/parameterPenilaianSchema";
 import type { MethodValues } from "@/validations/parameterPenilaianSchema";
 import type { ScoringMethod } from "@/types/parameterPenilaian";
 
-export default function UpdateMethodForm({ method, periodId }: { method:ScoringMethod; periodId?:number }) {
-  const router=useRouter();
-  const mutation=useUpdateParameter("methods" ,method.id);
-  const [values,setValues]=useState<MethodValues>(()=>(methodValues(method)));
-  const baseline=useRef(methodValues(method));
-  const [errors,setErrors]=useState<Record<string,string>>({});
-  const [attempt,setAttempt]=useState<ParameterAttempt>();
-  const [checking,setChecking]=useState(false), [saved,setSaved]=useState(false);
-  const running=useRef(false), mounted=useRef(true);
-  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
-  const pending=mutation.isPending||checking;
-  const submit=async(event:React.FormEvent<HTMLFormElement>)=>{
+export default function UpdateMethodForm({
+  method,
+  periodId,
+}: {
+  method: ScoringMethod;
+  periodId?: number;
+}) {
+  const router = useRouter();
+  const mutation = useUpdateParameter("methods", method.id);
+  const [values, setValues] = useState<MethodValues>(() =>
+    methodValues(method),
+  );
+  const baseline = useRef(methodValues(method));
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [attempt, setAttempt] = useState<ParameterAttempt>();
+  const [checking, setChecking] = useState(false),
+    [saved, setSaved] = useState(false);
+  const running = useRef(false),
+    mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const pending = mutation.isPending || checking;
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if(running.current||pending||attempt||saved)return;
-    running.current=true;
-    const context=captureSession();
+    if (running.current || pending || attempt || saved) return;
+    running.current = true;
+    const context = captureSession();
     try {
       assertParameterAccess(context.id);
-      const parsed=updateMethodSchema.safeParse(values);
-      if(!parsed.success){setErrors(parameterValidationErrors(parsed.error));return;}
-      if(parsed.data.method_type==="formula"&&baseline.current.method_type!=="formula"){setErrors({method_type:"Formula belum didukung engine."});return;}
-      const payload=parameterChanges(buildMethod(parsed.data),buildMethod(baseline.current));
-      if(!Object.keys(payload).length){setErrors({root:"Tidak ada perubahan untuk disimpan."});return;}
-      const snapshot=structuredClone(payload);
+      const parsed = updateMethodSchema.safeParse(values);
+      if (!parsed.success) {
+        setErrors(parameterValidationErrors(parsed.error));
+        return;
+      }
+      if (
+        parsed.data.method_type === "formula" &&
+        baseline.current.method_type !== "formula"
+      ) {
+        setErrors({ method_type: "Formula belum didukung engine." });
+        return;
+      }
+      const payload = parameterChanges(
+        buildMethod(parsed.data),
+        buildMethod(baseline.current),
+      );
+      if (!Object.keys(payload).length) {
+        setErrors({ root: "Tidak ada perubahan untuk disimpan." });
+        return;
+      }
+      const snapshot = structuredClone(payload);
       setErrors({});
       try {
-        const result=await mutation.mutateAsync(payload);
-        if(!mounted.current||!isCurrentSession(context)||!canManageParameters())return;
+        const result = await mutation.mutateAsync(payload);
+        if (
+          !mounted.current ||
+          !isCurrentSession(context) ||
+          !canManageParameters()
+        )
+          return;
         setSaved(true);
-        const message=typeof result.response.message==="string"&&result.response.message.trim()?result.response.message.trim().slice(0,500):"Data berhasil disimpan.";
-        if(result.synchronizationFailed)toast.warning(message+" Penyimpanan terkonfirmasi, tetapi sinkronisasi tampilan gagal. Jangan ulangi Save.");
+        const message =
+          typeof result.response.message === "string" &&
+          result.response.message.trim()
+            ? result.response.message.trim().slice(0, 500)
+            : "Data berhasil disimpan.";
+        if (result.synchronizationFailed)
+          toast.warning(
+            message +
+              " Penyimpanan terkonfirmasi, tetapi sinkronisasi tampilan gagal. Jangan ulangi Save.",
+          );
         else toast.success(message);
-        router.push(parameterLink(parameterRoot+"/scoring/"+method.id,method.survey_module_id,periodId));
-      } catch(error:unknown) {
-        if(!mounted.current||!isCurrentSession(context))return;
-        if(error instanceof ParameterUncertainError)setAttempt({payload:snapshot,id:method.id,filters:{survey_module_id:method.survey_module_id},message:error.message});
+        router.push(
+          parameterLink(
+            parameterRoot + "/scoring/" + method.id,
+            method.survey_module_id,
+            periodId,
+          ),
+        );
+      } catch (error: unknown) {
+        if (!mounted.current || !isCurrentSession(context)) return;
+        if (error instanceof ParameterUncertainError)
+          setAttempt({
+            payload: snapshot,
+            id: method.id,
+            filters: { survey_module_id: method.survey_module_id },
+            message: error.message,
+          });
         else setErrors(parameterRequestErrors(error));
       }
-    } catch(error:unknown){if(mounted.current&&isCurrentSession(context))setErrors(parameterRequestErrors(error));}
-    finally{running.current=false;}
+    } catch (error: unknown) {
+      if (mounted.current && isCurrentSession(context))
+        setErrors(parameterRequestErrors(error));
+    } finally {
+      running.current = false;
+    }
   };
-  const check=async()=>{
-    if(!attempt||running.current)return;
-    running.current=true;setChecking(true);
-    const context=captureSession(), snapshot=attempt;
-    try{
-      const message=await checkParameterResult("methods",snapshot.payload,snapshot.filters,snapshot.id);
-      if(mounted.current&&isCurrentSession(context))setAttempt({...snapshot,message});
-    }catch{if(mounted.current&&isCurrentSession(context))setAttempt({...snapshot,message:"Pemeriksaan gagal/ditolak. Ini bukan bukti penyimpanan sebelumnya gagal."});}
-    finally{running.current=false;if(mounted.current&&isCurrentSession(context))setChecking(false);}
+  const check = async () => {
+    if (!attempt || running.current) return;
+    running.current = true;
+    setChecking(true);
+    const context = captureSession(),
+      snapshot = attempt;
+    try {
+      const message = await checkParameterResult(
+        "methods",
+        snapshot.payload,
+        snapshot.filters,
+        snapshot.id,
+      );
+      if (mounted.current && isCurrentSession(context))
+        setAttempt({ ...snapshot, message });
+    } catch {
+      if (mounted.current && isCurrentSession(context))
+        setAttempt({
+          ...snapshot,
+          message:
+            "Pemeriksaan gagal/ditolak. Ini bukan bukti penyimpanan sebelumnya gagal.",
+        });
+    } finally {
+      running.current = false;
+      if (mounted.current && isCurrentSession(context)) setChecking(false);
+    }
   };
-  return <form onSubmit={submit} className="max-w-3xl space-y-6" aria-busy={pending}>
-    <h1 className="text-2xl font-bold">Update Method</h1>
-    <p className="text-sm text-muted-foreground">Formula belum dievaluasi backend dan tidak dapat dipilih sebagai metode baru. Configuration JSON belum digunakan computeScore(); pengaturan tersebut tidak diedit di form ini. Belum ada aturan satu default aktif.</p>
-    <p role="status" className="text-sm">Formula tersimpan: {method.formula??"—"}. Configuration tersimpan: {JSON.stringify(method.configuration)}. Keduanya dipertahankan jika tidak diubah.</p>
-    {errors.root&&<p role="alert">{errors.root}</p>}
-    {attempt&&<ParameterWriteNotice attempt={attempt} pending={pending} onCheck={()=>{void check();}} onRelease={()=>{if(!running.current)setAttempt(undefined);}}/>}
-    <ParameterFields values={values} fields={methodFields} errors={errors} disabled={pending||saved} onChange={(name,value)=>setValues(previous=>({...previous,[name]:value}))}/>
-    <div className="flex justify-end gap-3"><Button type="button" variant="outline" disabled={pending} onClick={()=>router.back()}>Batal</Button><Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={pending||!!attempt||saved}>{pending?"Memproses...":"Update"}</Button></div>
-  </form>;
+  return (
+    <form onSubmit={submit} className="max-w-3xl space-y-6" aria-busy={pending}>
+      <h1 className="text-2xl font-bold">Update Method</h1>
+      <p className="text-sm text-muted-foreground">
+        Formula belum dievaluasi backend dan tidak dapat dipilih sebagai metode
+        baru. Configuration JSON belum digunakan computeScore(); pengaturan
+        tersebut tidak diedit di form ini. Belum ada aturan satu default aktif.
+      </p>
+      <p role="status" className="text-sm">
+        Formula tersimpan: {method.formula ?? "—"}. Configuration tersimpan:{" "}
+        {JSON.stringify(method.configuration)}. Keduanya dipertahankan jika
+        tidak diubah.
+      </p>
+      {errors.root && <p role="alert">{errors.root}</p>}
+      {attempt && (
+        <ParameterWriteNotice
+          attempt={attempt}
+          pending={pending}
+          onCheck={() => {
+            void check();
+          }}
+          onRelease={() => {
+            if (!running.current) setAttempt(undefined);
+          }}
+        />
+      )}
+      <ParameterFields
+        values={values}
+        fields={methodFields}
+        errors={errors}
+        disabled={pending || saved}
+        onChange={(name, value) =>
+          setValues((previous) => ({ ...previous, [name]: value }))
+        }
+      />
+      <div className="flex justify-end gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={pending}
+          onClick={() => router.back()}
+        >
+          Batal
+        </Button>
+        <Button
+          type="submit"
+          className="bg-blue-600 hover:bg-blue-700"
+          disabled={pending || !!attempt || saved}
+        >
+          {pending ? "Memproses..." : "Update"}
+        </Button>
+      </div>
+    </form>
+  );
 }
-

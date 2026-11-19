@@ -1,23 +1,18 @@
-"use client"
+"use client";
 
-import { SidebarProvider } from "@/components/ui/sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar";
 
-import AppSidebar from "./AppSidebar"
-import AppHeader from "./AppHeader"
+import AppSidebar from "./AppSidebar";
+import AppHeader from "./AppHeader";
 
-
-export default function AppLayout({
-    children,
-}:{
-    children:React.ReactNode
-}){
-    return(
-        <SidebarProvider>
-            <AppSidebar/>
-            <main className="flex-1">
-                <AppHeader/>
-                {children}
-            </main>
-        </SidebarProvider>
-    )
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <AppSidebar />
+      <main className="flex-1">
+        <AppHeader />
+        {children}
+      </main>
+    </SidebarProvider>
+  );
 }

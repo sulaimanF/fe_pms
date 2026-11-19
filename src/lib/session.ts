@@ -5,12 +5,26 @@ export interface SessionContext {
   token: string | null;
 }
 
-export type SessionStatus = "pending" | "verifying" | "valid" | "invalid" | "failed";
-export type SessionEndReason = "logout" | "expired" | "external" | "login-rollback";
+export type SessionStatus =
+  | "pending"
+  | "verifying"
+  | "valid"
+  | "invalid"
+  | "failed";
+export type SessionEndReason =
+  | "logout"
+  | "expired"
+  | "external"
+  | "login-rollback";
 export type RevocationReason = "logout" | "login-rollback";
 
-export type LogoutOutcome = { status: "confirmed" | "unconfirmed" | "local"; message?: string };
-export type LogoutProgress = { status: "pending" } | { status: "finished"; outcome: LogoutOutcome; storageCleared: boolean };
+export type LogoutOutcome = {
+  status: "confirmed" | "unconfirmed" | "local";
+  message?: string;
+};
+export type LogoutProgress =
+  | { status: "pending" }
+  | { status: "finished"; outcome: LogoutOutcome; storageCleared: boolean };
 
 interface SessionSnapshot {
   id: number;
@@ -23,10 +37,28 @@ interface SessionSnapshot {
 
 export type SessionEvent =
   | { type: "unauthorized"; context: SessionContext }
-  | { type: "ended"; id: number; reason: SessionEndReason; storageCleared: boolean }
-  | { type: "revocation-result"; id: number; reason: RevocationReason; status: "pending" | "confirmed" | "unconfirmed"; message?: string };
+  | {
+      type: "ended";
+      id: number;
+      reason: SessionEndReason;
+      storageCleared: boolean;
+    }
+  | {
+      type: "revocation-result";
+      id: number;
+      reason: RevocationReason;
+      status: "pending" | "confirmed" | "unconfirmed";
+      message?: string;
+    };
 
-const serverSnapshot: SessionSnapshot = { id: 0, ready: false, ending: false, status: "pending", failure: null, logout: null };
+const serverSnapshot: SessionSnapshot = {
+  id: 0,
+  ready: false,
+  ending: false,
+  status: "pending",
+  failure: null,
+  logout: null,
+};
 let snapshot = serverSnapshot;
 let token: string | null = null;
 let endingToken: string | null = null;
@@ -49,12 +81,18 @@ export const getEndingToken = () => endingToken;
 
 export function subscribeSession(listener: () => void) {
   listeners.add(listener);
-  return () => { listeners.delete(listener); };
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
-export function subscribeSessionEvents(listener: (event: SessionEvent) => void) {
+export function subscribeSessionEvents(
+  listener: (event: SessionEvent) => void,
+) {
   eventListeners.add(listener);
-  return () => { eventListeners.delete(listener); };
+  return () => {
+    eventListeners.delete(listener);
+  };
 }
 
 export function emitSessionEvent(event: SessionEvent) {
@@ -71,8 +109,13 @@ export function captureSession(): SessionContext {
 }
 
 export function isCurrentSession(context: SessionContext) {
-  return snapshot.ready && !snapshot.ending && context.id === snapshot.id &&
-    context.token === token && context.token === readStoredToken();
+  return (
+    snapshot.ready &&
+    !snapshot.ending &&
+    context.id === snapshot.id &&
+    context.token === token &&
+    context.token === readStoredToken()
+  );
 }
 
 export function assertSession(id: number) {
@@ -84,26 +127,49 @@ export function assertSession(id: number) {
 export function initializeSession(credential: string | null) {
   token = credential;
   endingToken = null;
-  publish({ id: snapshot.id + 1, ready: true, ending: false, status: credential ? "verifying" : "invalid", failure: null, logout: null });
+  publish({
+    id: snapshot.id + 1,
+    ready: true,
+    ending: false,
+    status: credential ? "verifying" : "invalid",
+    failure: null,
+    logout: null,
+  });
   return captureSession();
 }
 
 // Verification is deliberately kept in memory; persisted auth is never proof of validity.
-export function setSessionStatus(context: SessionContext, status: "verifying" | "valid" | "failed", failure: SessionSnapshot["failure"] = null) {
+export function setSessionStatus(
+  context: SessionContext,
+  status: "verifying" | "valid" | "failed",
+  failure: SessionSnapshot["failure"] = null,
+) {
   if (!isCurrentSession(context) || !context.token) return false;
   publish({ ...snapshot, status, failure });
   return true;
 }
 
-export function registerSessionRequest(controller: AbortController, id: number) {
+export function registerSessionRequest(
+  controller: AbortController,
+  id: number,
+) {
   requests.set(controller, id);
-  return () => { requests.delete(controller); };
+  return () => {
+    requests.delete(controller);
+  };
 }
 
 export function beginSessionEnd(reason?: SessionEndReason) {
   const previous = captureSession();
   endingToken = previous.token;
-  publish({ id: snapshot.id + 1, ready: true, ending: true, status: "invalid", failure: null, logout: reason === "logout" ? { status: "pending" } : null });
+  publish({
+    id: snapshot.id + 1,
+    ready: true,
+    ending: true,
+    status: "invalid",
+    failure: null,
+    logout: reason === "logout" ? { status: "pending" } : null,
+  });
   requests.forEach((id, controller) => {
     if (id === previous.id) {
       controller.abort();
@@ -122,19 +188,31 @@ export function finishSessionEnd(id: number) {
 
 // UI progress is independent of authentication: local credentials stay cleared while waiting.
 export function startLogout(id: number) {
-  if (snapshot.id === id && !snapshot.logout) publish({ ...snapshot, logout: { status: "pending" } });
+  if (snapshot.id === id && !snapshot.logout)
+    publish({ ...snapshot, logout: { status: "pending" } });
 }
 
-export function finishLogout(id: number, outcome: LogoutOutcome, storageCleared: boolean) {
+export function finishLogout(
+  id: number,
+  outcome: LogoutOutcome,
+  storageCleared: boolean,
+) {
   if (snapshot.id !== id || snapshot.logout?.status !== "pending") return;
-  publish({ ...snapshot, logout: { status: "finished", outcome, storageCleared } });
+  publish({
+    ...snapshot,
+    logout: { status: "finished", outcome, storageCleared },
+  });
 }
 
 export function acknowledgeLogout(id: number) {
-  if (snapshot.id === id && snapshot.logout?.status === "finished") publish({ ...snapshot, logout: null });
+  if (snapshot.id === id && snapshot.logout?.status === "finished")
+    publish({ ...snapshot, logout: null });
 }
 
-export async function requestInSession<T>(id: number, request: () => Promise<T>): Promise<T> {
+export async function requestInSession<T>(
+  id: number,
+  request: () => Promise<T>,
+): Promise<T> {
   assertSession(id);
   const result = await request();
   assertSession(id);

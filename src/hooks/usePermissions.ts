@@ -12,10 +12,11 @@ export const usePermissions = () => {
   return useQuery({
     ...session,
     queryKey: sessionQueryKey(session.id, "permissions"),
-    queryFn: () => requestInSession(session.id, () => {
-      assertAccess(session.id, ACCESS.permissionCatalog);
-      return getPermissions();
-    }),
+    queryFn: () =>
+      requestInSession(session.id, () => {
+        assertAccess(session.id, ACCESS.permissionCatalog);
+        return getPermissions();
+      }),
     enabled: session.enabled && access.allowed,
   });
 };

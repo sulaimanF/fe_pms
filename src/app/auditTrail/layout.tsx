@@ -10,19 +10,15 @@ export default function AuditLayout({
 }: {
   children: React.ReactNode;
 }) {
-
   return (
     <RouteAccessGuard>
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <AppHeader />
-        <main className="p-4 md:p-6">
-          {children}
-        </main>
-      </SidebarInset>
-
-    </SidebarProvider>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <AppHeader />
+          <main className="p-4 md:p-6">{children}</main>
+        </SidebarInset>
+      </SidebarProvider>
     </RouteAccessGuard>
   );
 }

@@ -26,6 +26,8 @@ import { useState } from "react";
 import ConfirmDialogsLogout from "@/components/dialogs/ConfirmDiloagsLogout";
 import { useAuthorization } from "@/hooks/useAuthorization";
 import { getRoutePermissions } from "@/lib/authorization";
+import { useParameterAccess } from "@/hooks/useParameterAccess";
+import { isParameterPath } from "@/lib/parameterAuthorization";
 
 type NavLink = {
     icon: React.ElementType;
@@ -76,9 +78,11 @@ export default function AppSidebar() {
     (state) => state.auth.menu
   );
   const access = useAuthorization();
+  const parameterAccess = useParameterAccess();
   const visibleMenu = access.allowed ? menu.map((section) => ({
     ...section,
     items: section.items.filter((item) => {
+      if (isParameterPath(item.path) && !parameterAccess.allowed) return false;
       const required = getRoutePermissions(item.path);
       return required === null || access.can(required);
     }),

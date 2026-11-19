@@ -3,6 +3,7 @@
 import AppSidebar from "@/components/layout/AppSidebar";
 import AppHeader from "@/components/layout/AppHeader";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { RouteAccessGuard } from "@/components/auth/AccessGuard";
 
 export default function AuditLayout({
   children,
@@ -11,6 +12,7 @@ export default function AuditLayout({
 }) {
 
   return (
+    <RouteAccessGuard>
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
@@ -21,5 +23,6 @@ export default function AuditLayout({
       </SidebarInset>
 
     </SidebarProvider>
+    </RouteAccessGuard>
   );
 }

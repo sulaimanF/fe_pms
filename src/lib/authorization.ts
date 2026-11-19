@@ -19,6 +19,9 @@ export const ACCESS = {
   userUpdate: ["user.view", "user.update"],
   userDelete: ["user.delete"],
   userManagePermissions: ["user.managePermission"],
+  auditList: ["audit.viewAny"],
+  auditDetail: ["audit.view"],
+  auditExport: ["audit.export"],
   // Verified catalog codes. BE Outlet routes still need permission enforcement.
   outletList: ["outlet.viewAny"],
   outletDetail: ["outlet.view"],
@@ -76,6 +79,7 @@ export function getRoutePermissions(pathname: string): AccessRequirement | null 
   if (typeof pathname !== "string") return null;
   const path = pathname.replace(/\/+$/, "");
   if (path === "/dashboard") return ACCESS.dashboard;
+  if (path === "/auditTrail") return ACCESS.auditList;
   if (path === "/roleManagement") return ACCESS.roleList;
   if (path === "/roleManagement/create") return ACCESS.roleCreate;
   if (/^\/roleManagement\/update\/[^/]+$/.test(path)) return ACCESS.roleUpdate;

@@ -21,6 +21,9 @@ export interface VerifyOtpRequest {
 export interface AuthRole {
   id: number;
   name: string;
+  code?: string;
+  is_active?: boolean;
+  pivot?: { is_active?: boolean; scope_type?: string | null; scope_id?: number | null; expires_at?: string | null };
 }
 
 export interface AuthOrganizationUnit {

@@ -33,8 +33,8 @@ export default function OutletParentPanel({ form, units, loading, error, denied,
     }
     return <div className="space-y-8">
     <OutletRelationPanel title={selected && selected.unit_type !== "cabang" || (!selected && currentOrganization) ? "Organisasi induk" : "Kantor Cabang"} single rows={rows} options={units.filter(unit => unit.unit_type === "cabang")} onChange={ids => { if (ids[0])
-        form.setValue("organization_unit_id", String(ids[0]), { shouldDirty: true, shouldValidate: true }); }} canRemove={() => false} disabled={disabled || denied} loading={loading} error={!!error || denied} onRetry={onRetry} reason={denied ? "Lookup organisasi memerlukan org-unit.viewAny." : "Satu induk wajib. Link dapat mengganti induk; Unlink tidak tersedia karena organization_unit_id tidak menerima null."} consequence="Memilih Kantor Cabang lain akan memindahkan Outlet ini dari induk saat ini setelah Save. Ini hanya draft sampai Save; Cancel tidak mengubah database."/>
+        form.setValue("organization_unit_id", String(ids[0]), { shouldDirty: true, shouldValidate: true }); }} canRemove={() => false} disabled={disabled || denied} loading={loading} error={!!error || denied} onRetry={onRetry} reason={denied ? "Lookup organisasi memerlukan org-unit.viewAny." : undefined} consequence="Memilih Kantor Cabang lain akan memindahkan Outlet ini dari induk saat ini setelah Save. Ini hanya draft sampai Save; Cancel tidak mengubah database."/>
     {form.formState.errors.organization_unit_id && <p role="alert" className="text-sm text-red-600">{form.formState.errors.organization_unit_id.message}</p>}
-    <OutletRelationPanel title="Kantor Wilayah" rows={region ? [region] : []} options={[]} reason="Informasi turunan melalui organisasi induk. Hubungan Wilayah diubah melalui organisasi terkait." loading={loading} error={!!error || denied}/>
+    <OutletRelationPanel title="Kantor Wilayah" rows={region ? [region] : []} options={[]} loading={loading} error={!!error || denied}/>
   </div>;
 }

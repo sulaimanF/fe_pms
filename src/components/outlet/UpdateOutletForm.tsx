@@ -183,7 +183,7 @@ export default function UpdateOutletForm({ outlet: initialOutlet }: { outlet: Ou
           </p>
         </div>
         </div>
-        <OutletFields form={form}/>
+        <OutletFields form={form} currentManager={outlet.manager}/>
         </CardContent></Card>
         <OutletParentPanel form={form} units={organizations.data?.data??[]} loading={organizations.isLoading} error={organizations.error} denied={organizations.denied} onRetry={()=>{void organizations.refetch();}} disabled={pending||saved||!!uncertain} currentOrganization={{
             id: outlet.organization_unit_id,

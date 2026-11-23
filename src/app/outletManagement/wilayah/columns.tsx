@@ -1,10 +1,10 @@
-"use client";
+"use client"
 
-import { ColumnDef } from "@tanstack/react-table";
-import { DataTablesActions } from "@/components/tables/index";
-import type { OrganizationUnit } from "@/types/organizationUnit";
+import { ColumnDef } from "@tanstack/react-table"
+import { DataTablesActions } from "@/components/tables/index"
+import type { OrganizationUnit } from "@/types/organizationUnit"
 
-export const columns = (canEdit:boolean): ColumnDef<OrganizationUnit>[] => [
+export const columns = (canEdit: boolean): ColumnDef<OrganizationUnit>[] => [
   {
     accessorKey: "name",
     header: "Nama",
@@ -31,7 +31,15 @@ export const columns = (canEdit:boolean): ColumnDef<OrganizationUnit>[] => [
     enableHiding: false,
     size: 150,
     cell: ({ row }) => (
-      <DataTablesActions variant="inline" row={row.original} editHref={canEdit?`/outletManagement/organization/update/${row.original.id}`:undefined} />
+      <DataTablesActions
+        variant="inline"
+        row={row.original}
+        editHref={
+          canEdit
+            ? `/outletManagement/organization/update/${row.original.id}`
+            : undefined
+        }
+      />
     ),
   },
 ];

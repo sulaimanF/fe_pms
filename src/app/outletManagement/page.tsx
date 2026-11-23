@@ -261,11 +261,7 @@ function OutletManagementContent() {
           </Button>
         </div>
       )}
-      <p className="text-sm text-muted-foreground">
-        Wilayah dan KC merupakan organisasi. KCP menggunakan master Outlet yang
-        terhubung ke KC; jenis layanan Outlet tetap mengikuti backend. Jumlah
-        KC/KCP pada tabel organisasi mengikuti agregasi backend.
-      </p>
+      
       <WilayahTable data={wilayah} />
       <KcTable data={cabang} organizations={organizations} />
       <KcpTable

@@ -13,10 +13,10 @@ interface KcTableProps {
 }
 
 export default function KcTable({ data, organizations }: KcTableProps) {
-  const access=useAuthorization();
+  const access = useAuthorization();
   const { table } = useDataTable({
     data,
-    columns: columns(organizations,access.can(ACCESS.organizationUpdate)),
+    columns: columns(organizations, access.can(ACCESS.organizationUpdate)),
   });
 
   return <DataTables table={table} title="Kantor Cabang" />;

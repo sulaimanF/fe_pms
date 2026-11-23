@@ -1,15 +1,15 @@
-"use client";
+"use client"
 
-import { useParams } from "next/navigation";
-import axios from "axios";
-import { AccessGuard, AccessDenied } from "@/components/auth/AccessGuard";
-import FormSkeleton from "@/components/skeletons/FormSkeleton";
-import { Button } from "@/components/ui/button";
-import UpdateOutletForm from "@/components/outlet/UpdateOutletForm";
-import { useOutlet } from "@/hooks/useOutlets";
-import { useSessionQuery } from "@/hooks/useAuth";
-import { ACCESS, isForbidden } from "@/lib/authorization";
-import { isValidEntityId } from "@/lib/managementApi";
+import { useParams } from "next/navigation"
+import axios from "axios"
+import { AccessGuard, AccessDenied } from "@/components/auth/AccessGuard"
+import FormSkeleton from "@/components/skeletons/FormSkeleton"
+import { Button } from "@/components/ui/button"
+import UpdateOutletForm from "@/components/outlet/UpdateOutletForm"
+import { useOutlet } from "@/hooks/useOutlets"
+import { useSessionQuery } from "@/hooks/useAuth"
+import { ACCESS, isForbidden } from "@/lib/authorization"
+import { isValidEntityId } from "@/lib/managementApi"
 
 export default function UpdateOutletPage() {
   return (

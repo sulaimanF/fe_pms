@@ -34,6 +34,7 @@ export interface Outlet {
   address: string | null;
   city: string | null;
   province: string | null;
+  district: string | null;
   country: string;
   postal_code: string | null;
   phone: string | null;
@@ -63,6 +64,7 @@ export interface OutletCreateRequest {
   address?: string | null;
   city?: string | null;
   province?: string | null;
+  district?: string | null;
   country?: string;
   postal_code?: string | null;
   phone?: string | null;

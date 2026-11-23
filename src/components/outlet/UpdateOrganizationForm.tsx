@@ -74,7 +74,7 @@ export default function UpdateOrganizationForm({ organization }: {
             return;
         }
         try {
-            const payload = buildOrganizationUpdate(values, form.formState.dirtyFields, parentId, baseline.parent_id);
+            const payload = buildOrganizationUpdate(values, form.formState.dirtyFields, parentId, baseline.parent_id, baseline.unit_type);
             const names = new Map((regional ? units : allOutlets).map(row => [row.id, row.name]));
             const remaining = organizationRelationChanges(draft, regional ? "organization" : "outlet", names);
             if (!Object.keys(payload).length && !remaining.length) {
@@ -88,7 +88,7 @@ export default function UpdateOrganizationForm({ organization }: {
                 if (error instanceof Error && !('isAxiosError' in error))
                     form.setError("root.server", { message: error.message });
                 else
-                    applyFormFailure(form, error, ["code", "name", "province", "city", "is_active"]);
+                    applyFormFailure(form, error, ["code", "name", "full_name", "province", "city", "district", "is_active"]);
             }
         }
     };
@@ -140,7 +140,7 @@ export default function UpdateOrganizationForm({ organization }: {
     {form.formState.errors.root?.server && <p role="alert">{form.formState.errors.root.server.message}</p>}
     {attempt && <OrganizationSaveNotice attempt={attempt} pending={pending} onRetry={() => { void retry(); }} onCheck={() => { void inspect(); }}/>}
     <fieldset disabled={locked} className="grid min-w-0 grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-      <OrganizationFields form={form} title={regional ? "Kantor Wilayah" : "Kantor Cabang"} codeLocked coordinatesUnsupported={!regional}/>
+      <OrganizationFields form={form} title={regional ? "Kantor Wilayah" : "Kantor Cabang"} showFullName codeLocked/>
       <div className="space-y-8">
         {regional ? <OutletRelationPanel title="Kantor Cabang" rows={relationRows} options={units.filter(unit => unit.unit_type === "cabang" && !isOrganizationAncestor(unit.id, baseline.id, units)).map(unit => ({ ...unit, parentLabel: units.find(parent => parent.id === unit.parent_id)?.name ?? (unit.parent_id === null ? "Tanpa parent" : `Organisasi #${unit.parent_id}`) }))} onChange={ids => setDraft(current => editRelationDraft(current, initialIds, ids))} disabled={locked || organizations.denied} loading={organizations.isLoading} error={!!organizations.error || organizations.denied} onRetry={() => { void organizations.refetch(); }} reason={organizations.denied ? "Lookup memerlukan org-unit.viewAny." : "Unlink melepaskan parent Cabang, bukan menghapus master."} consequence="Link memindahkan Kantor Cabang yang dipilih dari parent saat ini ke Wilayah ini setelah Save. Outlet di bawah Cabang tetap terhubung ke Cabang tersebut. Unlink hanya melepaskan hubungan parent."/> :
             <OutletRelationPanel title={parentTitle} single rows={parentRows} options={units.filter(unit => unit.unit_type === "wilayah" && !isOrganizationAncestor(baseline.id, unit.id, units))} onChange={ids => setParentId(ids[0] ?? null)} disabled={locked || organizations.denied} loading={organizations.isLoading} error={!!organizations.error || organizations.denied} onRetry={() => { void organizations.refetch(); }} reason="Satu parent. Unlink diperbolehkan karena parent_id organisasi nullable." consequence="Mengganti pilihan akan memindahkan Kantor Cabang ini ke parent yang dipilih saat Save. Hubungan Outlet ke Cabang tetap dipertahankan."/>}

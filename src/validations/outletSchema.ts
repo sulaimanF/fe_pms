@@ -3,7 +3,6 @@ import { OUTLET_TYPES } from "@/types/outlet";
 import type {
   Outlet,
   OutletCreateRequest,
-  OutletJsonContainer,
   OutletUpdateRequest,
 } from "@/types/outlet";
 
@@ -23,17 +22,6 @@ const optionalId = z
     "ID User tidak valid.",
   );
 
-const coordinate = (limit: number) =>
-  z
-    .string()
-    .trim()
-    .refine(
-      (value) =>
-        value === "" ||
-        (Number.isFinite(Number(value)) && Math.abs(Number(value)) <= limit),
-      `Koordinat harus berada pada rentang -${limit} sampai ${limit}.`,
-    );
-
 const date = z
   .string()
   .refine(
@@ -45,23 +33,6 @@ const date = z
     "Tanggal tidak valid.",
   );
 
-function jsonContainer(text: string): OutletJsonContainer | null {
-  if (!text.trim()) return null;
-  const value: unknown = JSON.parse(text);
-  if (!value || typeof value !== "object")
-    throw new Error("Gunakan object atau array JSON.");
-  return value as OutletJsonContainer;
-}
-
-const json = z.string().refine((value) => {
-  try {
-    jsonContainer(value);
-    return true;
-  } catch {
-    return false;
-  }
-}, "Gunakan object/array JSON yang valid, atau kosongkan.");
-
 const fields = {
   code: z.string().trim().min(1, "Kode wajib diisi.").max(50),
   name: z.string().trim().min(1, "Nama wajib diisi.").max(255),
@@ -70,18 +41,15 @@ const fields = {
   address: z.string().trim(),
   city: z.string().trim().max(100),
   province: z.string().trim().max(100),
+  district: z.string().trim().max(100, "Kecamatan maksimal 100 karakter."),
   country: z.string().trim().max(100),
   postal_code: z.string().trim().max(20),
   phone: z.string().trim().max(50),
   email: z.union([z.email("Email tidak valid."), z.literal("")]),
-  latitude: coordinate(90),
-  longitude: coordinate(180),
   opening_date: date,
   closing_date: date,
   manager_user_id: optionalId,
   is_active: z.boolean(),
-  operating_hours: json,
-  metadata: json,
 };
 
 const dateOrder = (
@@ -122,18 +90,15 @@ export const emptyOutlet: OutletFormValues = {
   address: "",
   city: "",
   province: "",
+  district: "",
   country: "",
   postal_code: "",
   phone: "",
   email: "",
-  latitude: "",
-  longitude: "",
   opening_date: "",
   closing_date: "",
   manager_user_id: "",
   is_active: true,
-  operating_hours: "",
-  metadata: "",
 };
 
 export function outletToForm(outlet: Outlet): OutletFormValues {
@@ -145,23 +110,16 @@ export function outletToForm(outlet: Outlet): OutletFormValues {
     address: outlet.address ?? "",
     city: outlet.city ?? "",
     province: outlet.province ?? "",
+    district: outlet.district ?? "",
     country: outlet.country,
     postal_code: outlet.postal_code ?? "",
     phone: outlet.phone ?? "",
     email: outlet.email ?? "",
-    latitude: outlet.latitude ?? "",
-    longitude: outlet.longitude ?? "",
     opening_date: outlet.opening_date?.slice(0, 10) ?? "",
     closing_date: outlet.closing_date?.slice(0, 10) ?? "",
     manager_user_id:
       outlet.manager_user_id === null ? "" : String(outlet.manager_user_id),
     is_active: outlet.is_active,
-    operating_hours:
-      outlet.operating_hours === null
-        ? ""
-        : JSON.stringify(outlet.operating_hours, null, 2),
-    metadata:
-      outlet.metadata === null ? "" : JSON.stringify(outlet.metadata, null, 2),
   };
 }
 
@@ -174,24 +132,20 @@ function outletPayload(values: OutletFormValues): OutletCreateRequest {
     address: values.address || null,
     city: values.city || null,
     province: values.province || null,
+    district: values.district || null,
     ...(values.country ? { country: values.country } : {}),
     postal_code: values.postal_code || null,
     phone: values.phone || null,
     email: values.email || null,
-    latitude: values.latitude === "" ? null : Number(values.latitude),
-    longitude: values.longitude === "" ? null : Number(values.longitude),
     opening_date: values.opening_date || null,
     closing_date: values.closing_date || null,
     manager_user_id:
       values.manager_user_id === "" ? null : Number(values.manager_user_id),
     is_active: values.is_active,
-    operating_hours: jsonContainer(values.operating_hours),
-    metadata: jsonContainer(values.metadata),
   };
 }
 
-export const buildOutletCreate = (values: OutletFormValues) =>
-  outletPayload(values);
+export const buildOutletCreate = (values: OutletFormValues) => outletPayload(values);
 
 export function buildOutletUpdate(
   values: OutletFormValues,
@@ -206,7 +160,7 @@ export function buildOutletUpdate(
   const all = outletPayload(values),
     payload: OutletUpdateRequest = {};
   for (const key of Object.keys(dirty) as (keyof OutletFormValues)[]) {
-    if (dirty[key] && key !== "code")
+    if (dirty[key] && key !== "code" && Object.prototype.hasOwnProperty.call(all, key))
       Object.assign(payload, { [key]: all[key] });
   }
   return payload;

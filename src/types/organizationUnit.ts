@@ -16,6 +16,7 @@ export interface OrganizationUnit {
   address: string | null;
   city: string | null;
   province: string | null;
+  district: string | null;
   country: string;
   postal_code: string | null;
   phone: string | null;
@@ -39,9 +40,11 @@ export type ManagedOrganizationType = "wilayah" | "cabang";
 export interface OrganizationWriteRequest {
   code?: string;
   name?: string;
+  full_name?: string | null;
   unit_type?: ManagedOrganizationType;
   parent_id?: number | null;
   province?: string | null;
+  district?: string | null;
   city?: string | null;
   is_active?: boolean;
 }
